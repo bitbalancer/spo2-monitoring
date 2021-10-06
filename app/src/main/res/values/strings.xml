@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">Observant_v32</string>
+
+    <!-- static ui elements -->
+    <string name="title_activity_scan">Connect</string>
+    <string name="title_activity_main">Observe</string>
+    <string name="tab_color">Color</string>
+    <string name="tab_plot">Plot</string>
+    <string name="motivation">“Paying attention in a particular way: on purpose, in the present moment, and nonjudgmentally” (Kabat-Zinn).</string>
+    <string name="button_text_start">START</string>
+    <string name="button_text_stop">STOP</string>
+    <string name="button_text_clear">CLEAR</string>
+    <string name="state">State: </string>
+
+    <!-- initial ui values -->
+    <string name="time_default">00:00</string>
+    <string name="heart_rate_default">___ bpm</string>
+    <string name="state_default">Waiting</string>
+    <string name="loading">Loading...</string>
+
+
+
+    <!-- permission check dialog -->
+    <string name="permission_check_dialog_title">This app needs some permissions</string>
+    <string name="permission_check_dialog_message">Please grant access to location so this app can detect PLUX\'s Bluetooth devices.</string>
+    <string name="permission_check_dialog_positive_button">OK</string>
+
+
+    <!-- for colors -->
+    <string name="start">Let\'s start</string>
+    <string name="VL">VERY LOW</string>
+    <string name="LO">LOW</string>
+    <string name="NO">NORMAL</string>
+    <string name="HI">HIGH</string>
+    <string name="VH">VERY HIGH</string>
+
+
+</resources>
