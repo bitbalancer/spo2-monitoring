@@ -6,6 +6,9 @@ android {
     //compileSdkVersion 27
     buildToolsVersion "29.0.2"
     defaultConfig {
+        configurations.all{
+            resolutionStrategy{ force 'androidx.core:core:1.6.0' }
+        }
         applicationId "info.plux.api.sampleapp"
         minSdkVersion 21
         targetSdkVersion 28
@@ -65,7 +68,8 @@ dependencies {
     */
     //implementation 'com.github.scottyab:HeartBeatView:0.0.1'
     implementation project(path: ':heartbeatview-library')
-    implementation 'com.jjoe64:graphview:4.2.2'
+    //implementation 'com.jjoe64:graphview:4.2.2'
+    implementation project(path: ':GraphView-master')
     implementation 'org.apache.commons:commons-text:1.9'
 
     implementation group: 'uk.me.berndporr', name:'iirj', version: '1.3'
