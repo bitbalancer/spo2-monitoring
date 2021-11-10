@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="info.plux.api.Observant_v32">
+    package="info.plux.api.SpO2Monitoring">
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -17,12 +17,12 @@
 
         <!-- @android:style/Theme.Holo.Light -->
         <service
-            android:name="info.plux.api.Observant_v32.old.read_from_db.ReadService"
+            android:name="info.plux.api.SpO2Monitoring.old.read_from_db.ReadService"
             android:enabled="true"
             android:exported="true" />
 
         <activity
-            android:name="info.plux.api.Observant_v32.activities.ScanActivity"
+            android:name="info.plux.api.SpO2Monitoring.activities.ScanActivity"
             android:label="@string/title_activity_scan"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light" > <!-- android:theme="@style/AppTheme" -->
@@ -33,14 +33,14 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="info.plux.api.Observant_v32.old.DeviceActivity"
+            android:name="info.plux.api.SpO2Monitoring.old.DeviceActivity"
             /> <!-- android:theme="@style/Theme.AppCompat.Light"-->
         <activity
-            android:name="info.plux.api.Observant_v32.old.PlotterActivity"
+            android:name="info.plux.api.SpO2Monitoring.old.PlotterActivity"
            /> <!-- android:theme="@style/Theme.AppCompat.Light"-->
 
         <activity
-            android:name="info.plux.api.Observant_v32.activities.MainActivity"
+            android:name="info.plux.api.SpO2Monitoring.activities.MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/Theme.AppCompat.Light"/> <!-- android:theme="@style/Theme.AppCompat.Light.NoActionBar" -->
         <!-- android:configChanges="orientation|screenSize" -->

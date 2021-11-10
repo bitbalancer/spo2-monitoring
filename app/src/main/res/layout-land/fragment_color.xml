@@ -8,7 +8,7 @@
     tools:context=".old.DeviceActivity">
 
 
-    <info.plux.api.Observant_v32.thermometer.ThermometerHorizontal
+    <info.plux.api.SpO2Monitoring.thermometer.ThermometerHorizontal
         android:id="@+id/thermometer_horizontal"
         android:layout_width="636dp"
         android:layout_height="272dp"

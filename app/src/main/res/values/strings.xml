@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Observant_v32</string>
+    <string name="app_name">SpO2Monitoring</string>
 
     <!-- static ui elements -->
     <string name="title_activity_scan">Connect</string>
