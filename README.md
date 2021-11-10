@@ -1,2 +1,3 @@
-# Observant
-Observant is a biofeedback app. Biosignalsplux sensors send EKG and EDA data via Bluetooth. The data is displayed in real time in different forms. 
+# SpO2Monitoring
+This app measures the SpO2 saturation. Biosignalsplux sensors send data via Bluetooth. The user can observe his SpO2 value in real time. If the SpO2 falls below a critical threshold, the app alarms the user aucoustically. Observant builds the basis for this app.
+
