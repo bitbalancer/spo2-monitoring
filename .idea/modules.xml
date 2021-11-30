@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Observant_v32.iml" filepath="$PROJECT_DIR$/.idea/modules/Observant_v32.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GraphView-master/Observant_v32.GraphView-master.iml" filepath="$PROJECT_DIR$/.idea/modules/GraphView-master/Observant_v32.GraphView-master.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Observant_v32.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Observant_v32.app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/heartbeatview-library/Observant_v32.heartbeatview-library.iml" filepath="$PROJECT_DIR$/.idea/modules/heartbeatview-library/Observant_v32.heartbeatview-library.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SpO2Monitoring.iml" filepath="$PROJECT_DIR$/.idea/modules/SpO2Monitoring.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.iml" filepath="$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.iml" filepath="$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.iml" />
     </modules>
   </component>
 </project>

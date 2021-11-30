@@ -1,4 +1,4 @@
 include ':heartbeatview-library'
 include ':GraphView-master'
 include ':app'
-rootProject.name = "Observant_v32"
+rootProject.name = "SpO2Monitoring"

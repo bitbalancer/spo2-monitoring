@@ -9,12 +9,12 @@ buildscript {
     }
 }
 
-
 //wrapper {
 //    gradleVersion = '5.6'
 //}
 
 apply plugin: 'com.android.library'
+
 
 
 android {
@@ -59,7 +59,7 @@ task makeJar(type: Copy) {
 makeJar.dependsOn(clearJar, build)
 
 
-apply from: './maven_push.gradle'
+//apply from: './maven_push.gradle'
 
 repositories {
     google()
