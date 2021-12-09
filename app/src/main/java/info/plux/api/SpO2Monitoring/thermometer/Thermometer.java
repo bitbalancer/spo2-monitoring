@@ -172,12 +172,12 @@ public class Thermometer extends View {
 
         while (tmp <= innerEffectEndY) {
             canvas.drawLine(circleCenterX - outerRectRadius - DEGREE_WIDTH, tmp, circleCenterX - outerRectRadius, tmp, degreePaint);
-            String txt = ((int) startGraduation) + "µS  "; //"°"
+            String txt = ((int) startGraduation) + "%  "; //"°"
             graduationPaint.getTextBounds(txt, 0, txt.length(), rect);
             float textWidth = rect.width();
             float textHeight = rect.height();
 
-            canvas.drawText(((int) startGraduation) + " µS", circleCenterX - outerRectRadius - DEGREE_WIDTH - textWidth - DEGREE_WIDTH * 1.5f,
+            canvas.drawText(((int) startGraduation) + "%", circleCenterX - outerRectRadius - DEGREE_WIDTH - textWidth - DEGREE_WIDTH * 1.5f,
                     tmp + textHeight / 2, graduationPaint); //"°"
             tmp += (innerEffectEndY - innerEffectStartY) / nbGraduations;
             startGraduation -= inc;

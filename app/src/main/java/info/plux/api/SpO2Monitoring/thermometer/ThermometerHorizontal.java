@@ -23,14 +23,14 @@ public class ThermometerHorizontal extends View {
     private Paint degreePaint, graduationPaint;
 
     private static final int GRADUATION_TEXT_SIZE = 16; // in sp
-    private static float DEGREE_WIDTH = 30; //30
+    private static float DEGREE_WIDTH = 10; //30
     private static final int NB_GRADUATIONS = ThermoConstants.NUMBER_OF_GRADUATIONS;
     public static final float MIN_TEMP = ThermoConstants.MIN_TEMP;
     public static final float MAX_TEMP = ThermoConstants.MAX_TEMP;
     private static final float RANGE_TEMP = ThermoConstants.RANGE_TEMP;
-    private static final int NB_GRADUATIONS_F = 8;
-    private static final float MAX_TEMP_F = 120, MIN_TEMP_F = -30;
-    private static final float RANGE_TEMP_F = 150;
+    private static final int NB_GRADUATIONS_F = 10;
+    private static final float MAX_TEMP_F = 100, MIN_TEMP_F = 0;
+    private static final float RANGE_TEMP_F = 100;
     private int nbGraduations = NB_GRADUATIONS;
     private float maxTemp = MAX_TEMP;
     private float minTemp = MIN_TEMP;
@@ -202,12 +202,12 @@ public class ThermometerHorizontal extends View {
             canvas.drawLine(tmp, circleCenterY-outerRectRadius-DEGREE_WIDTH, tmp, circleCenterY-outerRectRadius, degreePaint);
 
 
-            String txt = ((int) endGraduation) + "µS"; //"°"
+            String txt = ((int) endGraduation) + "%"; //"°"
             graduationPaint.getTextBounds(txt, 0, txt.length(), rect);
             float textWidth = rect.width();
             float textHeight = rect.height();
 
-            canvas.drawText(((int) startGraduation) + " µS", tmp ,
+            canvas.drawText(((int) startGraduation) + "%", tmp ,
                     circleCenterY - outerRectRadius - textHeight,graduationPaint); //"°"
             tmp += (innerEffectEndX - innerEffectStartX) / nbGraduations;
             startGraduation += inc;

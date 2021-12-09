@@ -28,7 +28,7 @@ public class PlotFragment extends Fragment {
     protected static final int MAX_X = 10;
     // electrodermal activity
     protected static final int MIN_EDA = 0;
-    protected static final int MAX_EDA = 10;
+    protected static final int MAX_EDA = 100;
     // heart rate
     protected static final int MIN_ECG = -1;
     protected static final int MAX_ECG = 1; // 75 for 1 deriv; // 8000 for 2 deriv
@@ -91,7 +91,7 @@ public class PlotFragment extends Fragment {
                     return super.formatLabel(value, isValueX) + " s";
                 } else {
                     // show currency for y values
-                    return super.formatLabel(value, isValueX) + " µS";
+                    return super.formatLabel(value, isValueX) + " %";
                 }
             }
         });
