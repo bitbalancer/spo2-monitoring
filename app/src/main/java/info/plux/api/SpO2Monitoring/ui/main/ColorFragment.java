@@ -882,37 +882,39 @@ public class ColorFragment extends Fragment {
 
 
     /**
-     * The strength of electrodermal activity determines the color
+     * The value of blood oxygen determines the saturation of the background color
      */
-    private void setColorAccordingToLevelOf(double electroDermalActivity) {
-        double x = electroDermalActivity;
+    private void setColorAccordingToLevelOf(double oxygen) {
+        double x = oxygen;
         int color;
-
         if (x < 0) {
             color = getResources().getColor(R.color.White);
             colorFragmentLayout.setBackgroundColor(color);
             colorLevelView.setText(R.string.start);
-        } else if (x < 0.5) {
-            color = getResources().getColor(R.color.VeryLow);
-            colorFragmentLayout.setBackgroundColor(color);
-            colorLevelView.setText(R.string.VL);
-        } else if (x < 1) {
-            color = getResources().getColor(R.color.Low);
-            colorFragmentLayout.setBackgroundColor(color);
-            colorLevelView.setText(R.string.LO);
-        } else if (x < 3) {
-            color = getResources().getColor(R.color.Normal);
-            colorFragmentLayout.setBackgroundColor(color);
-            colorLevelView.setText(R.string.NO);
-        } else if (x < 7) {
-            color = getResources().getColor(R.color.High);
-            colorFragmentLayout.setBackgroundColor(color);
-            colorLevelView.setText(R.string.HI);
-        } else {
-            color = getResources().getColor(R.color.VeryHigh);
-            colorFragmentLayout.setBackgroundColor(color);
-            colorLevelView.setText(R.string.VH);
         }
+        else {
+            color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
+            colorFragmentLayout.setBackgroundColor(color);
+            if (x < 100) {
+                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
+                colorFragmentLayout.setBackgroundColor(color);
+                colorLevelView.setText(R.string.HI);
+            } else if (x < 95) {
+                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
+                colorFragmentLayout.setBackgroundColor(color);
+                colorLevelView.setText(R.string.NO);
+            } else if (x < 90) {
+                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
+                colorFragmentLayout.setBackgroundColor(color);
+                colorLevelView.setText(R.string.LO);
+            } else if (x < 85) {
+                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
+                colorFragmentLayout.setBackgroundColor(color);
+                colorLevelView.setText(R.string.VL);
+            }
+
+        }
+
 
     }
 
