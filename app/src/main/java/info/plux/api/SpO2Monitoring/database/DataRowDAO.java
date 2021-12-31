@@ -8,6 +8,8 @@ import androidx.room.Query;
 
 import java.util.List;
 
+import info.plux.api.SpO2Monitoring.SingleLiveEvent.SingleLiveEvent;
+
 @Dao
 public interface DataRowDAO {
     //Not all commands are used but kept in case of...

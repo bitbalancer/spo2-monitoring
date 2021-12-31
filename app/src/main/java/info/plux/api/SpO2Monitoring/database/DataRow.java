@@ -12,13 +12,13 @@ public class DataRow {
     @ColumnInfo
     public double time;
 
-    @ColumnInfo(name = "EDA")
-    public double electrodermalActivity;
+    @ColumnInfo(name = "sig1") // previous EDA
+    public double val_1;
 
-    @ColumnInfo(name ="ECG")
-    public double electroCardiogram;
+    @ColumnInfo(name ="sig2") // previous ECG
+    public double val_2;
 
-    @ColumnInfo(name = "HR")
-    public int heartRate;
+    @ColumnInfo(name = "heart rate")
+    public int val_3;
 
 }

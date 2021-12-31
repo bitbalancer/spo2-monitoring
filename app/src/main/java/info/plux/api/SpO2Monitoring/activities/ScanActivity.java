@@ -66,9 +66,9 @@ public class ScanActivity extends AppCompatActivity {
     private ArrayList deviceList, transferList;
 
 
-    // *********************************************************************************************
+    //**********************************************************************************************
     // Lifecycle Callbacks
-    // *********************************************************************************************
+    //**********************************************************************************************
 
 
     @Override
@@ -93,9 +93,9 @@ public class ScanActivity extends AppCompatActivity {
         // for fragment list
         deviceList = new ArrayList();
 
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         // Creating Scan Button
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
 
         // Initializes button
         scan = findViewById(R.id.button_scan);
@@ -126,6 +126,8 @@ public class ScanActivity extends AppCompatActivity {
 
 
     }
+
+    //----------------------------------------------------------------------------------------------
 
     @Override
     protected void onResume() {
@@ -159,6 +161,8 @@ public class ScanActivity extends AppCompatActivity {
 
     }
 
+    //----------------------------------------------------------------------------------------------
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -168,6 +172,8 @@ public class ScanActivity extends AppCompatActivity {
         unregisterReceiver(scanDevicesUpdateReceiver);
 
     }
+
+    //----------------------------------------------------------------------------------------------
 
     @Override
     protected void onDestroy() {
@@ -181,9 +187,9 @@ public class ScanActivity extends AppCompatActivity {
 
     }
 
-    // *********************************************************************************************
+    //**********************************************************************************************
     // Other Methods
-    // *********************************************************************************************
+    //**********************************************************************************************
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -195,8 +201,12 @@ public class ScanActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    //----------------------------------------------------------------------------------------------
+
     @Override
     protected void onRestoreInstanceState(Bundle savedInstancState){}
+
+    //----------------------------------------------------------------------------------------------
 
     // Detects devices
     private final BroadcastReceiver scanDevicesUpdateReceiver = new BroadcastReceiver() {
@@ -224,6 +234,8 @@ public class ScanActivity extends AppCompatActivity {
 
     };
 
+    //----------------------------------------------------------------------------------------------
+
     /**
      *  Stops scanning after a pre-defined scan period.
      */
@@ -246,6 +258,8 @@ public class ScanActivity extends AppCompatActivity {
         bthDeviceScan.doDiscovery();
 
     }
+
+    //----------------------------------------------------------------------------------------------
 
     private void sendScanResultsToFragmentList(){
         Bundle bundle = new Bundle();
@@ -282,9 +296,9 @@ public class ScanActivity extends AppCompatActivity {
 
     }
 
-    // ---------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------
     // Checking for Permissions (Adopted from Bioplux API)
-    // ---------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------
 
     private void permissionCheck(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
@@ -313,6 +327,8 @@ public class ScanActivity extends AppCompatActivity {
         }
     }
 
+    //----------------------------------------------------------------------------------------------
+
     @TargetApi(Build.VERSION_CODES.M)
     private boolean addPermission(List<String> permissionsList, String permission) {
         if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
@@ -324,6 +340,8 @@ public class ScanActivity extends AppCompatActivity {
         }
         return true;
     }
+
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {

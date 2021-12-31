@@ -74,7 +74,7 @@ public class Thermometer extends View {
         outerCircleRadius = typedArray.getDimension(R.styleable.Thermometer_radius, 20f);
         int outerColor = typedArray.getColor(R.styleable.Thermometer_outerColor, Color.GRAY);
         int middleColor = typedArray.getColor(R.styleable.Thermometer_middleColor, Color.WHITE);
-        int innerColor = typedArray.getColor(R.styleable.Thermometer_innerColor, Color.RED);
+        int innerColor = typedArray.getColor(R.styleable.Thermometer_innerColor, Color.BLUE); // Color of liquid
 
         typedArray.recycle();
 

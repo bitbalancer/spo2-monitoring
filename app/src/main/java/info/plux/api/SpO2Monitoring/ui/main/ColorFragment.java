@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -71,22 +72,27 @@ public class ColorFragment extends Fragment {
     protected static SingleLiveEvent<DataRow> isLoaded = new SingleLiveEvent<>();
 
     private static final int BPM_LIMIT = 40;
+    // Adjust maximally expected value for your quantity
+    // In this for case Sp02 Sensor (Biosignalsplux)
+    private static final double MAX_LEVEL = 1.2;
     protected static final String TIME_KEY = "time";
-    protected static final String EDA_KEY = "eda";
-    protected static final float EDA_DEFAULT = -1;
-    protected static final String HR_KEY = "hr";
+    protected static final String VAL_1_KEY = "val_1";
+    protected static final float VAL_1_DEFAULT = -1f;
+    protected static final String VAL_3_KEY = "heart_rate";
     protected static final String RUNNING_ON_ROT_KEY = "running";
     protected static final String STATE_KEY = "state";
 
 
-    protected static final int FREQUENCY = 1000; // up to 1000 Hz possible but not recommendable due to substantial delay
-    protected static int maxDataPoints = PlotFragment.MAX_X * FREQUENCY;
+    protected static final int FREQUENCY = 20; // up to 1000 Hz possible but not recommendable due to substantial delay
+    protected static int maxDataPoints = (int) Math.ceil(PlotFragment.MAX_X) * FREQUENCY; // Number of data points maximally hold in a series (GraphView)
 
 
-    // setup of channel 1 and 2 for Biosignalsplux hub
+    // Setup of Ports of Biosignalsplux hub
+    // Ports ranges from 0 to 9. The bitmask designates the channels of the sensor.
     private static final Source[] SOURCES = new Source[]{
-            new Source(1, 16, (byte) 0x01, 1),
-            new Source(2, 16, (byte) 0x01, 1)
+            // Setup for Sp02 sensor with two channels. Connected to ground port (port 9)
+            new Source(9,16,(byte) 0x01, 1),
+            new Source(9,16,(byte) 0x02, 1),
     }; // Do not use (different) divisors! Missing values between actual measurements are set to 0. Won't work with filtering in observer.
 
     private static final List<Source> SOURCES_LIST = Arrays.asList(SOURCES);
@@ -114,7 +120,7 @@ public class ColorFragment extends Fragment {
     private static MeasureDB mDB;
     // electrodermal activity
     protected static ColorFragment colorFragment;
-    private float eda = -1;
+    private float val_1 = -1f;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private boolean runningOnRotation = false;
@@ -122,14 +128,12 @@ public class ColorFragment extends Fragment {
 
     private static final String ARG_SECTION_NUMBER = "section_number";
 
-    private DatabaseObserver databaseObserver;
 
 
 
-
-    // *********************************************************************************************
+    //**********************************************************************************************
     // Lifecycle Callbacks
-    // *********************************************************************************************
+    //**********************************************************************************************
 
 
     @Override
@@ -141,11 +145,13 @@ public class ColorFragment extends Fragment {
         mDB = MeasureDB.getInstance(getContext());
 
         colorFragment = this;  // used in clearDatabase() for clear button
+        // will be used in LoadingTask
 
         currentOrientation = getResources().getConfiguration().orientation;
 
     }
 
+    //----------------------------------------------------------------------------------------------
 
     /**
      * Necessary preparations for communication and setup of observers
@@ -160,80 +166,136 @@ public class ColorFragment extends Fragment {
 
         View root = inflater.inflate(R.layout.fragment_color, container, false);
 
-        // -----------------------------------------------------------------------------------------
-        // Initialization of Broadcast Receiver
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
+        // Create Broadcast Receiver
+        //------------------------------------------------------------------------------------------
 
         // Receiver listens to state changes in Bioplux communication channel.
         intentFilterForStateReceiver = new IntentFilter();
         intentFilterForStateReceiver.addAction(ACTION_STATE_CHANGED);
 
-        // -----------------------------------------------------------------------------------------
-        // Setup of Observers
-        // -----------------------------------------------------------------------------------------
-
-        // 1. observer
+        //------------------------------------------------------------------------------------------
+        // Create Observer
+        //------------------------------------------------------------------------------------------
 
         // Observes changes in database to display current values
-        databaseObserver = new DatabaseObserver();
+        final DatabaseObserver databaseObserver = new DatabaseObserver();
         mDB.dataRowDAO().getLastRecord().observe(getViewLifecycleOwner(), databaseObserver);
 
+        //------------------------------------------------------------------------------------------
 
-        // 2. observer
+        // Checks if all conditions are satisfied and hence enables/disables buttons.
+        final Observer<Boolean[]> clickableObserver = new Observer<Boolean[]>() {
 
-        // Observes when data from database is loaded to activate buttons and add data series to graph.
-        isLoaded.observe(getViewLifecycleOwner(), new Observer<DataRow>() {
+            // Debugging
+            // int counter = 0;
+
+
+            private boolean conditional, isSatisfied;
+            int leng = 0;
 
             @Override
-            public void onChanged(DataRow dataRow) { // Remember: SingleLiveEvent is NOT called after rotation when onResume begins in comparison to MutableLiveData!
-                // MutableLiveData is also called after restarting or recreating of activity when onResume begins!
-                // Explanation: When a new observer is registered on LiveData, LiveData is initialized with value from earlier.
+            public void onChanged(Boolean[] conditionals) {
+                // counter++;
 
-                addSeriesToGraph();
-                Log.i(TAG,"Series has been initialized and added");
+                // Checks if array exists
+                if(conditionals != null) {
+                    isSatisfied = true; // Must be true! Do not initialize once in declaration.
 
-                // If OS killed process (activity + ViewModel), than desired UI data is still available in the surviving savedInstanceState
-                if(savedInstanceState==null) {
-
-
-                    // Gets last record in database to initialize UI elements if no temporarily saved data is available
-                    if (dataRow != null) {
-                        eda = (float) dataRow.electrodermalActivity;
-                        timeView.setText(FancyStringConverter.convert(dataRow.time));
-                        setColorAccordingToLevelOf(eda);
-                        if(dataRow.heartRate >= 0) {
-                            heartRateView.setText(Integer.toString(dataRow.heartRate) + " bpm");
-                        } else{
-                            heartRateView.setText(getString(R.string.heart_rate_default));
-                        }
-
-                        if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                            thermometer.setCurrentTemp(eda);
-                        } else {
-                            thermometerHorizontal.setCurrentTemp(eda);
-                        }
-                        Log.v(TAG,"dataRow not null!");
+                    // Prevents buttons to be enabled in case of empty array
+                    if( conditionals.length>0 ){
+                        leng = conditionals.length;
+                    } else{
+                        isSatisfied = false;
                     }
-                }
 
-                Buttons.tryEnabling(0);  // Activates Buttons if state of connection has been confirmed as CONNECTED by the broadcast receiver
-                loadingView.setVisibility(View.GONE); // LoadingView is removed to uncover UI elements
-                lockDeviceRotation(false); // After loading process is completed rotation is permitted
+                    // Checks if all conditions are satisfied.
+                    for (int i = 0; i < leng; i++) {
 
+                        conditional = conditionals[i].booleanValue();
+                        Log.d(TAG, "Clickable_Condition "+i+ " == "+conditional);
+                        isSatisfied = isSatisfied && conditionals[i].booleanValue();
+                    }
 
-                Log.d(TAG,"Loaded: level = " + Buttons.getLevel());
-                try {
-                    Log.d(TAG,"Loaded: last time = " + dataRow.time);
-                } catch (NullPointerException ex) {
-                    Log.d(TAG,"Loaded: last time = NOT AVAILABLE");
+                    // Enables buttons if all conditions met
+                    btStart.setEnabled(isSatisfied);
+                    btPause.setEnabled(isSatisfied);
+                    btClear.setEnabled(isSatisfied);
+
+                    Log.i(TAG, "Buttons enabled: " + isSatisfied);
+
+                } else{
+                    Log.w(TAG, "Clickable is null!");
                 }
             }
+        };
 
-        });
+        colorViewModel.getClickable().observe(getViewLifecycleOwner(), clickableObserver);
+
+        //------------------------------------------------------------------------------------------
+
+//        // Checks if all conditions are satisfied and hence recording is continued.
+//        final Observer<Boolean[]> continuantObserver = new Observer<Boolean[]>() {
+//
+//            // Debugging
+//            // int counter = 0;
+//
+//
+//            private boolean conditional, isSatisfied;
+//            int leng = 0;
+//
+//            @Override
+//            public void onChanged(Boolean[] conditionals) {
+//                // counter++;
+//
+//                // Checks if array exists
+//                if(conditionals != null) {
+//                    isSatisfied = true; // Must be true! Do not initialize once in declaration.
+//
+//                    // Prevents buttons to be enabled in case of empty array
+//                    if( conditionals.length>0 ){
+//                        leng = conditionals.length;
+//                    } else{
+//                        isSatisfied = false;
+//                    }
+//
+//                    // Checks if all conditions are satisfied.
+//                    for (int i = 0; i < leng; i++) {
+//
+//                        conditional = conditionals[i].booleanValue();
+//                        Log.d(TAG, "Continuant_Condition "+i+ " == "+conditional);
+//                        isSatisfied = isSatisfied && conditionals[i].booleanValue();
+//                    }
+//
+//                    colorViewModel.setIsContinuant(isSatisfied);
+//
+//
+//                } else{
+//                    Log.w(TAG, "Continuant is null!");
+//                }
+//            }
+//        };
+//
+//        colorViewModel.getContinuant().observe(getViewLifecycleOwner(), continuantObserver);
 
         return root;
     }
 
+    // Continues recording if all conditions are met
+    public void checkOnRecording() {
+        boolean continuant = colorViewModel.checkContinuant();
+        if (continuant) {
+            btStart.performClick();
+        } else {
+            // Reset simple moving average if recording is discontinued
+            ColorViewModel.writeHandler.heartRateSMA.reset(false);
+        }
+
+        Log.i(TAG, "Recording continued: " + continuant);
+    }
+
+
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -255,7 +317,7 @@ public class ColorFragment extends Fragment {
         btStart = root.findViewById(R.id.bt_start);
         btPause = root.findViewById(R.id.bt_pause);
         btClear = root.findViewById(R.id.bt_clear);
-        Buttons.disable();
+        //Buttons.disable();
 
         // time display
         timeView = root.findViewById(R.id.text_time);
@@ -263,52 +325,51 @@ public class ColorFragment extends Fragment {
         // state display
         stateView = root.findViewById(R.id.text_state);
 
-        // -----------------------------------------------------------------------------------------
-        // Checking Stuff Related to Handler for Loading Process
-        // -----------------------------------------------------------------------------------------
 
-        // Checks if handler has been already created
-        if (ColorViewModel.handlerThread == null) {
-            ColorViewModel.handlerThread = new HandlerThread("LoadAndInitThread");
-            Log.v(TAG, "Handler initialized!");
-        } else if(savedInstanceState != null){
-            Float savedEda = savedInstanceState.getFloat(EDA_KEY);
-            timeView.setText(savedInstanceState.getString(TIME_KEY));
-            setColorAccordingToLevelOf(savedEda);
-            Log.d(TAG,Float.toString(savedInstanceState.getFloat(EDA_KEY)));
-            heartRateView.setText(savedInstanceState.getString(HR_KEY));
-            runningOnRotation = savedInstanceState.getBoolean(RUNNING_ON_ROT_KEY);
-            stateView.setText(savedInstanceState.getString(STATE_KEY));
 
-            if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                thermometer.setCurrentTemp(savedEda);
-            } else {
-                thermometerHorizontal.setCurrentTemp(savedEda);
+        //------------------------------------------------------------------------------------------
+        // Start loading and initializing process
+        //------------------------------------------------------------------------------------------
+
+        if(ColorViewModel.isInitialized){
+
+            Log.v(TAG, "Loading already done!");
+
+            if(savedInstanceState != null){ // Possibly redundant
+
+                timeView.setText(savedInstanceState.getString(TIME_KEY));
+                Float savedVal1 = savedInstanceState.getFloat(VAL_1_KEY);
+                setColorAccordingToLevelOf(savedVal1);
+
+                // Debugging
+                Log.d(TAG,Float.toString(savedVal1));
+
+                heartRateView.setText(savedInstanceState.getString(VAL_3_KEY));
+                stateView.setText(savedInstanceState.getString(STATE_KEY));
+                runningOnRotation = savedInstanceState.getBoolean(RUNNING_ON_ROT_KEY);
+
+                if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
+                    thermometer.setCurrentTemp(savedVal1);
+                } else {
+                    thermometerHorizontal.setCurrentTemp(savedVal1);
+                }
+
+                Log.v(TAG, "SavedInstanceState used!");
             }
-            Log.v(TAG, "SavedInstanceState used!");
+
+        } else{
+
+            initialize();
+
         }
 
-        // Thread can be started only ONCE! Otherwise IllegalThreadStateException is thrown!
-        if (!ColorViewModel.handlerThread.isAlive()) { // checks if thread has been started and yet not died.
-
-            loadingView.setVisibility(View.VISIBLE); // Covers initially all other elements of UI
-            lockDeviceRotation(true); // During loading is no rotation allowed
-
-            // Execute necessary Preparations
-            colorViewModel.prepare(getContext());
-
-            Log.v(TAG, "Handler has become alive!");
-
-
-        } else {
-            Log.v(TAG, "Handler already alive!");
-        }
-
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         // UI Buttons
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
 
+        //==========================================================================================
         // 1. Start button
+        //==========================================================================================
 
         btStart.setOnClickListener(new View.OnClickListener() {
 
@@ -333,7 +394,9 @@ public class ColorFragment extends Fragment {
             }
         });
 
+        //==========================================================================================
         // 2. Pause button
+        //==========================================================================================
 
         btPause.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -357,13 +420,15 @@ public class ColorFragment extends Fragment {
 
                     ColorViewModel.writeHandler.removeCallbacksAndMessages(null); // Removes all pending messages
 
-                    ColorViewModel.writeHandler.heartRateSMA.interrupt(); // Deletes all previously saved values
+                    ColorViewModel.writeHandler.heartRateSMA.reset(false); // Deletes all previously saved values
 
                 }
             }
         });
 
+        //==========================================================================================
         // 3. Clear button
+        //==========================================================================================
 
         btClear.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -373,7 +438,7 @@ public class ColorFragment extends Fragment {
                 // Because the clearing process effects UI, the app would crash.
                 lockDeviceRotation(true);
 
-                Buttons.disable(); // Disable all buttons
+                colorViewModel.changeClickable(3, false);
 
                 if (running.get()) {
 
@@ -389,7 +454,7 @@ public class ColorFragment extends Fragment {
 
                 ColorViewModel.writeHandler.removeCallbacksAndMessages(null); // Removes all pending messages
 
-                ColorViewModel.writeHandler.heartRateSMA.reset(); // All related parameters to SMA are reset to initial values
+                ColorViewModel.writeHandler.heartRateSMA.reset(true); // All related parameters to SMA are reset to initial values
 
                 clearDatabase();
 
@@ -399,6 +464,7 @@ public class ColorFragment extends Fragment {
 
     }
 
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onResume() {
@@ -406,62 +472,54 @@ public class ColorFragment extends Fragment {
 
         Log.v(TAG,"ON RESUME");
 
+        // statReceiver registers state changes in Bioplux communication channel.
+        getActivity().registerReceiver(stateReceiver, intentFilterForStateReceiver);
+
+        //------------------------------------------------------------------------------------------
+        // Checking for Rotation
+        //------------------------------------------------------------------------------------------
+
         checkAndSetOrientationInfo();
 
-        // Monitoring
-        if (ColorViewModel.rotating) {
+        if (colorViewModel.getRotating()) {
 
-            Log.v(TAG, "Rotating: Level = "+Buttons.getLevel());
+            Log.v(TAG, "Rotating");
+
+            addSeriesToGraph();
+
+            Log.v(TAG, "Series added to graph!");
 
         } else {
 
             Log.v(TAG, "Not rotating (task switch / home etc)");
         }
 
-        // statReceiver registers state changes in Bioplux communication channel.
-        getActivity().registerReceiver(stateReceiver, intentFilterForStateReceiver);
+        // If recording is running when rotation happens, than continue recording after rotation.
+        checkOnRecording();
 
-        // -----------------------------------------------------------------------------------------
-        // Handling of Different Cases of Resume
-        // -----------------------------------------------------------------------------------------
 
-        boolean interrupt = true;
-
-        if(ColorViewModel.comeback){ // The user has returned to scan activity and has come back
-            ColorViewModel.comeback=false;
-
-            colorViewModel.setUpBiopluxCommunication(getContext(),MainActivity.getBluetoothDevice()); // Repeats this part with the new Bioplux device
-
-            ColorViewModel.loadAndInitHandler.sendEmptyMessage(1);
-
-        } else{
-
-            // button control
-            Buttons.tryEnabling(1);
-
-            if(ColorViewModel.rotating){
-
-                addSeriesToGraph();
-                Log.v(TAG,"Series has been added!");
-
-                // If recording is running when rotation happens, than continue recording after rotation.
-                if(runningOnRotation && ColorViewModel.inTime){ // The last condition causes that rotations are ignored while the app is in the background.
-
-                    btStart.performClick();
-                    Log.v(TAG,"Continue recording after rotation!");
-                    interrupt = false;
-                }
-
-            }
-
-        }
-
-        // Resets simple moving average when recording is discontinued
-        if(interrupt) {
-            ColorViewModel.writeHandler.heartRateSMA.interrupt();
-        }
+//        boolean interrupt = true;
+//
+//        {
+//
+//            if (runningOnRotation && ColorViewModel.inTime) { // The last condition causes that rotations are ignored while the app is in the background.
+//
+//                btStart.performClick();
+//                Log.v(TAG, "Continue recording after rotation!");
+//                interrupt = false;
+//            }
+//
+//        }
+//
+//
+//        // Resets simple moving average when recording is discontinued
+//        if(interrupt) {
+//            ColorViewModel.writeHandler.heartRateSMA.reset(false);
+//        }
 
     }
+
+    //----------------------------------------------------------------------------------------------
 
     // Not called when program is aborted (red square) or rebuilt => Don't worry if latest heart rate wasn't saved in prefs
     @Override
@@ -470,15 +528,14 @@ public class ColorFragment extends Fragment {
 
         Log.v(TAG,"ON PAUSE");
 
-        getActivity().unregisterReceiver(stateReceiver);
+        //------------------------------------------------------------------------------------------
+        // Update Rotation Parameters
+        //------------------------------------------------------------------------------------------
 
-        activateHeartBeat(false);
         // Records if recording has been running when onPause is called.
-        runningOnRotation=running.get();
+        //runningOnRotation=running.get();
+        colorViewModel.changeContinuant(1,running.get());
         running.set(false);
-        // Rotation must occur in time slot to continue recording afterwards, provided that's the case.
-        TimeSlotTask timeSlotTask = new TimeSlotTask();
-        timeSlotTask.execute();
 
         // lockDeviceRotation(false) updates orientation which could have been already changed during lock phase.
         if(toBeSaved) {
@@ -488,17 +545,31 @@ public class ColorFragment extends Fragment {
         }
         Log.i(TAG,"Show orientation onPause: "+ColorViewModel.previousOrientation);
 
+        // Rotation must occur in time slot to continue recording afterwards, provided that's the case.
+        //TimingRotationTask timingTask = new TimingRotationTask();
+        //timingTask.execute();
+        timeRotation(DELAY);
+
+        //------------------------------------------------------------------------------------------
+        // Interrupt Processes
+        //------------------------------------------------------------------------------------------
+
         try {
             ColorViewModel.bioplux.stop();
         } catch (BiopluxException e) {
             e.printStackTrace();
         }
 
+        getActivity().unregisterReceiver(stateReceiver);
+
+        activateHeartBeat(false);
+
         // Warning: This is CRUCIAL! Without it pending messages would be flooding in long after Bioplux has been put on hold.
         ColorViewModel.writeHandler.removeCallbacksAndMessages(null);
 
     }
 
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onStop() {
@@ -514,17 +585,19 @@ public class ColorFragment extends Fragment {
         super.onDestroy();
     }
 
+
     public void onDetach() {
         super.onDetach();
 
         Log.v(TAG,"ON DETACH");
 
-        //handlerThread.quit(); // Do not use it!
+        // Do not use it!
+        // handlerThread.quit();
     }
 
-    // *********************************************************************************************
-    // Classes
-    // *********************************************************************************************
+    //**********************************************************************************************
+    // Class
+    //**********************************************************************************************
 
     /**
      * This observer takes the last single data row from the database to extract the data and display it in
@@ -534,18 +607,21 @@ public class ColorFragment extends Fragment {
         //float eda;
         double time;
         int heartRate;
-
+        // Debugging
+        // int counter = 0;
 
         @Override
         public void onChanged(DataRow dataRow) {
+
+            // counter++;
 
             if (!ColorViewModel.ignore) { // Ignores changes to database during loading process
 
                 if (dataRow != null) {
 
-                    // -----------------------------------------------------------------------------
-                    // 1. Display of Time
-                    // -----------------------------------------------------------------------------
+                    //------------------------------------------------------------------------------
+                    // 1. Display of time
+                    //------------------------------------------------------------------------------
 
                     time = dataRow.time;
 
@@ -553,26 +629,28 @@ public class ColorFragment extends Fragment {
                     timeView.setText(ColorViewModel.currentTime);
 
 
-                    // -----------------------------------------------------------------------------
-                    // 2. Display of Electrodermal Activity on Temperature Scale
-                    // -----------------------------------------------------------------------------
+                    //------------------------------------------------------------------------------
+                    // 2. Display of val_1 on temperature scale and through background color
+                    //------------------------------------------------------------------------------
 
-                    eda = (float) dataRow.electrodermalActivity;
+                    val_1 = getRelativeStrengthOf(dataRow.val_1); // in %
 
-                    // The current orientation determines which kind of temperature scale is used for depicting EDA.
+                    // The current orientation determines which kind of temperature scale is used for depicting val_1.
                     // The scales are adapted to their orientation.
                     if(currentOrientation==Configuration.ORIENTATION_PORTRAIT){
-                        thermometer.setCurrentTemp(eda);
+                        thermometer.setCurrentTemp(val_1);
                     } else {
-                        thermometerHorizontal.setCurrentTemp(eda);
+                        thermometerHorizontal.setCurrentTemp(val_1);
                     }
-                    setColorAccordingToLevelOf(eda); // Determines background color of UI according to EDA intensity
+                    setColorAccordingToLevelOf(val_1); // Determines background color of UI according to val_1 intensity
 
-                    // -----------------------------------------------------------------------------
-                    // 3. Display of Heart Rate
-                    // -----------------------------------------------------------------------------
 
-                    heartRate = dataRow.heartRate;
+
+                    //------------------------------------------------------------------------------
+                    // 3. Display of heart rate (val_3)
+                    //------------------------------------------------------------------------------
+
+                    heartRate = dataRow.val_3;
 
                     // Heart rate must be above 0
                     if(heartRate >= 0) {
@@ -594,9 +672,11 @@ public class ColorFragment extends Fragment {
                     }
                     ColorViewModel.previousTime = ColorViewModel.currentTime;
 
-                    // -----------------------------------------------------------------------------
-                    // 4. Plot of Electrodermal Activity & Electrocardiogram
-                    // -----------------------------------------------------------------------------
+
+
+                    //------------------------------------------------------------------------------
+                    // 4. Plot of val_1 and val_2
+                    //------------------------------------------------------------------------------
 
                     if (dataRow.time > PlotFragment.MAX_X) { // When the series goes beyond the visible area, scroll to end of series.
                         append(dataRow, true);
@@ -612,12 +692,16 @@ public class ColorFragment extends Fragment {
 
         // Expands and actualizes graph
         private void append(DataRow dataRow, boolean scrollToEnd){
-            ColorViewModel.seriesArr[0].appendData(new DataPoint(dataRow.time, dataRow.electrodermalActivity), scrollToEnd, maxDataPoints);
-            ColorViewModel.seriesArr[1].appendData(new DataPoint(dataRow.time, dataRow.electroCardiogram), scrollToEnd, maxDataPoints);
+            ColorViewModel.seriesArr[0].appendData(new DataPoint(dataRow.time, dataRow.val_1), scrollToEnd, maxDataPoints);
+            ColorViewModel.seriesArr[1].appendData(new DataPoint(dataRow.time, dataRow.val_2), scrollToEnd, maxDataPoints);
         }
 
 
     }
+
+    //**********************************************************************************************
+    // Class
+    //**********************************************************************************************
 
     /**
      * Bringing the time value into a nice displayable form.
@@ -665,87 +749,17 @@ public class ColorFragment extends Fragment {
         }
     }
 
-    /**
-     * This class controls the buttons in accordance to loading, connection state and other circumstances.
-     */
-    public static class Buttons {
 
-        /**
-         * The chosen case if levelUp = 0
-         */
-        private static int level = 0;
-
-
-
-        /**
-         * This method coordinates all the different conditions that determines if the buttons
-         * should be enabled or not. E.g. when the app is started, buttons should only be active if
-         * loading process is finished AND connection state confirmed. During connection loss buttons
-         * should be disabled as long as it lasts and not effected by other circumstances.
-         * Case 1 and 3 are missing because this way first method call in onResume does not interfere.
-         *
-         * @param increment The parameter can increase the current level to create the desired outcome
-         *                  depending on the situation. Only 0 and 1 is used.
-         */
-        private static void tryEnabling(int increment) {
-
-            int input = level + increment;
-            switch (input) {
-                case 0:
-                    level += 2;
-                    break;
-                case 2:
-                    activate(true);
-                    level += 2; // By first time loading finished and connection confirmed
-                    break;
-                case 4: // This input gets ignored, e.g. multiple CONNECTED confirmations.
-                    break;
-                case 5:
-                    activate(true);
-                    break;
-                default:
-                    Log.d(TAG,"Default case: input = "+input);
-                    break;
-            }
-
-        }
-
-        /**
-         * The method disables the buttons all together.
-         */
-        private static void disable() {
-            activate(false);
-        }
-
-        private static void activate(boolean on) {
-            btStart.setEnabled(on);
-            btPause.setEnabled(on);
-            btClear.setEnabled(on);
-            Log.i(TAG, "Button state changed: " + on);
-        }
-
-
-        public static void setLevel(int level) {
-            Buttons.level = level;
-        }
-
-        private static int getLevel() {
-            return Buttons.level;
-        }
-
-    }
-
-
-    // *********************************************************************************************
-    // Other Methods & Attributes
-    // *********************************************************************************************
+    //**********************************************************************************************
+    // Further Methods & Attributes
+    //**********************************************************************************************
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
         outState.putString(TIME_KEY, timeView.getText().toString());
-        outState.putFloat(EDA_KEY, eda);
-        outState.putString(HR_KEY, heartRateView.getText().toString());
+        outState.putFloat(VAL_1_KEY, val_1);
+        outState.putString(VAL_3_KEY, heartRateView.getText().toString());
         outState.putBoolean(RUNNING_ON_ROT_KEY, runningOnRotation);
         outState.putString(STATE_KEY, stateView.getText().toString());
 
@@ -755,6 +769,8 @@ public class ColorFragment extends Fragment {
         Log.v(TAG, "InstanceState saved!");
 
     }
+
+    //----------------------------------------------------------------------------------------------
 
     /**
      * Used in SectionsPagerAdapter
@@ -771,6 +787,67 @@ public class ColorFragment extends Fragment {
         return fragment;
 
     }
+
+    //----------------------------------------------------------------------------------------------
+    // UI Updates
+    //----------------------------------------------------------------------------------------------
+
+    //==============================================================================================
+    // For Initialization
+    //==============================================================================================
+
+    private void initialize() {
+        ColorViewModel.isInitialized = true;
+
+        loadingView.setVisibility(View.VISIBLE); // Covers initially all other elements of UI
+        lockDeviceRotation(true); // During loading is no rotation allowed
+
+        colorViewModel.initialize(colorFragment);
+
+    }
+
+    //----------------------------------------------------------------------------------------------
+
+    protected void initializeUI(DataRow dataRow) {
+
+        addSeriesToGraph();
+        Log.i(TAG, "Series has been initialized and added");
+
+
+        if (dataRow != null) {
+            val_1 = getRelativeStrengthOf(dataRow.val_1); // in %
+            timeView.setText(FancyStringConverter.convert(dataRow.time));
+            setColorAccordingToLevelOf(val_1);
+            if (dataRow.val_3 >= 0) { // val_3 = heart rate
+                heartRateView.setText(Integer.toString(dataRow.val_3) + " bpm");
+            } else {
+                heartRateView.setText(getString(R.string.heart_rate_default));
+            }
+
+            if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
+                thermometer.setCurrentTemp(val_1);
+            } else {
+                thermometerHorizontal.setCurrentTemp(val_1);
+            }
+            Log.v(TAG, "dataRow not null!");
+        }
+
+
+        //Buttons.tryEnabling(0);  // Activates Buttons if state of connection has been confirmed as CONNECTED by the broadcast receiver
+        colorViewModel.changeClickable(0,true);
+        loadingView.setVisibility(View.GONE); // LoadingView is removed to uncover UI elements
+        lockDeviceRotation(false); // After loading process is completed rotation is permitted
+
+
+        ColorViewModel.ignore = false;
+
+        // Debugging
+        // Observer is triggered once when registered to LiveData.
+        // Log.d(TAG,"Observer counter: "+databaseObserver.counter);
+    }
+
+    //==============================================================================================
+    //==============================================================================================
 
     /**
      * The start and stop methods of HeartbeatView are supposed to be used alternating.
@@ -791,13 +868,14 @@ public class ColorFragment extends Fragment {
         }
     }
 
+    //----------------------------------------------------------------------------------------------
 
     /**
      *  Disables buttons for some time to prevent crashes by pressing different buttons in quick sequence
      */
     private void coolDown(long delay) {
 
-        Buttons.disable();
+        colorViewModel.changeClickable(2,false);
 
         activateHandler.postDelayed(activateRunnable, delay); // After a certain time the buttons are enabled again
 
@@ -808,25 +886,52 @@ public class ColorFragment extends Fragment {
     Runnable activateRunnable = new Runnable() {
         @Override
         public void run() {
-            // update the ui from here
-            Buttons.tryEnabling(1);
+            colorViewModel.changeClickable(2,true);
         }
     };
 
+    //----------------------------------------------------------------------------------------------
+
+    private void timeRotation(long delay) {
+
+        colorViewModel.changeContinuant(2,true);
+        timingHandler.postDelayed(timingRunnable, delay); // After a certain time the buttons are enabled again
+
+    }
+
+    Handler timingHandler = new Handler(Looper.getMainLooper());
+
+    Runnable timingRunnable = new Runnable() {
+        @Override
+        public void run() {
+            colorViewModel.changeContinuant(2,false);
+        }
+    };
+    //----------------------------------------------------------------------------------------------
 
     /**
      *  The series are added to the graph. The graph holds the series.
      */
-    private void addSeriesToGraph(){
-        PlotFragment.graph.addSeries(ColorViewModel.seriesArr[0]); // EDA added
-        ColorViewModel.seriesArr[1].setColor(Color.RED); // Make ECG series red
-        PlotFragment.graph.getSecondScale().addSeries(ColorViewModel.seriesArr[1]); // ECG series added
+    void addSeriesToGraph(){
+        // Adds val_1 to scale
+        PlotFragment.graph.addSeries(ColorViewModel.seriesArr[0]);
+
+        // Makes val_2 series red
+        ColorViewModel.seriesArr[1].setColor(Color.RED);
+
+        // Adds val_2 series to scale
+        PlotFragment.graph.addSeries(ColorViewModel.seriesArr[1]);
+
+        // ALTERNATIVE: Adds val_2 series to second scale
+        // PlotFragment.graph.getSecondScale().addSeries(ColorViewModel.seriesArr[1]);
+
 
         if(ColorViewModel.seriesArr[0].getHighestValueX()>PlotFragment.MAX_X){ // Do not scroll to end of series when whole series is still in visible area.
             PlotFragment.viewport.scrollToEnd(); // scroll to last data point of series
         }
     }
 
+    //----------------------------------------------------------------------------------------------
 
     /**
      * Used for checking for state changes of communication channel to display it in UI
@@ -844,7 +949,7 @@ public class ColorFragment extends Fragment {
 
                 ColorViewModel.state = state.name();
                 stateView.setText(ColorViewModel.state);
-                //stateView.setText(state.name());
+                // stateView.setText(state.name());
 
                 switch (state) {
                     case NO_CONNECTION:
@@ -852,15 +957,12 @@ public class ColorFragment extends Fragment {
                     case LISTEN:
                         break;
                     case CONNECTING:
-                        Buttons.setLevel(2);
-                        Buttons.disable();
+                        colorViewModel.changeClickable(1,false);
                         activateHeartBeat(false);
                         running.set(false);
-                        Log.d(TAG,"CONNECTING: level = "+Buttons.getLevel());
                         break;
                     case CONNECTED:
-                        Buttons.tryEnabling(0);
-                        Log.d(TAG,"CONNECTED: level = "+Buttons.getLevel());
+                        colorViewModel.changeClickable(1,true);
                         break;
                     case ACQUISITION_TRYING:
                         break;
@@ -880,81 +982,104 @@ public class ColorFragment extends Fragment {
 
     };
 
+    //----------------------------------------------------------------------------------------------
 
     /**
-     * The value of blood oxygen determines the saturation of the background color
+     * Calculates relative strength of input value in %
+     * @param input
      */
-    private void setColorAccordingToLevelOf(double oxygen) {
-        double x = oxygen;
-        int color;
-        if (x < 0) {
-            color = getResources().getColor(R.color.White);
-            colorFragmentLayout.setBackgroundColor(color);
-            colorLevelView.setText(R.string.start);
-        }
-        else {
-            color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
-            colorFragmentLayout.setBackgroundColor(color);
-            if (x < 100) {
-                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
-                colorFragmentLayout.setBackgroundColor(color);
-                colorLevelView.setText(R.string.HI);
-            } else if (x < 95) {
-                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
-                colorFragmentLayout.setBackgroundColor(color);
-                colorLevelView.setText(R.string.NO);
-            } else if (x < 90) {
-                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
-                colorFragmentLayout.setBackgroundColor(color);
-                colorLevelView.setText(R.string.LO);
-            } else if (x < 85) {
-                color = Color.HSVToColor( new float[]{ 1f, (float) x, 1f } );
-                colorFragmentLayout.setBackgroundColor(color);
-                colorLevelView.setText(R.string.VL);
-            }
-
-        }
-
-
+    private float getRelativeStrengthOf(double input){
+        return 100f * (float)( input / MAX_LEVEL );
     }
 
+    //----------------------------------------------------------------------------------------------
 
+    /**
+     * The relative strength ranging from 0 to 100 % determines the saturation of the background color
+     * There are 5 labels for intensity: Very Low, Low, Normal, High, Very High.
+     * The label is depending on the input.
+     * @param x relative strength in %
+     */
+    private void setColorAccordingToLevelOf(double x) {
+        int color;
+
+        if( x < 0){
+
+            color = getResources().getColor(R.color.White);
+
+            colorLevelView.setText(R.string.start);
+
+        } else {
+            float[] hsv = new float[3];
+            // hue
+            hsv[0] = 1f;
+            // saturation
+            hsv[1] = (float) Math.pow(0.01*x,10); // Deviate from linear function
+            // value
+            hsv[2] = 1f;
+
+            color = Color.HSVToColor(hsv); // Get background color
+
+            // Adjust thresholds for your particular quantity.
+            // In this for case Sp02 Sensor (Biosignalsplux)
+            if (x < 80) {
+                colorLevelView.setText(R.string.VL);
+            } else if (x < 85) {
+                colorLevelView.setText(R.string.LO);
+            } else if (x < 90) {
+                colorLevelView.setText(R.string.NO);
+            } else if (x < 95) {
+                colorLevelView.setText(R.string.HI);
+            } else {
+                colorLevelView.setText(R.string.VH);
+            }
+        }
+
+
+        colorFragmentLayout.setBackgroundColor(color);
+    }
+
+    //----------------------------------------------------------------------------------------------
     /**
      * This method creates and starts the ClearTask. ClearTask deletes the database
      * and resets parameters to initial values. During deletion buttons are disabled
      * and rotation locked.
      */
-    protected static void clearDatabase(){
-        //ColorViewModel.time = 0.; // will be overridden at this point due to incoming messages
+    protected static void clearDatabase(){ // Remove static when not anymore necessary!
+        // Will be overridden at this point due to incoming messages
+        // ColorViewModel.time = 0.;
 
         // AsyncTask (that survives the lifecycle) is used to guarantee clearing of database
         // even when user finishes app during the clearing process.
-        ClearTask clearTask = new ClearTask(mDB,colorFragment);
-        clearTask.execute();
+        ClearingTask clearingTask = new ClearingTask(mDB,colorFragment);
+        clearingTask.execute();
     }
+
+    //----------------------------------------------------------------------------------------------
 
     /**
      * This method is executed in onPostExecute of ClearTask. The displayed values in the UI
      * are set to the initial ones.
      */
     protected void resetUi() {
-        Buttons.tryEnabling(1);
-        Log.d(TAG,"Button access level after resetUI: " + Buttons.getLevel());
+        colorViewModel.changeClickable(3,true);
+        //Buttons.tryEnabling(1);
+        //Log.d(TAG,"Button access level after resetUI: " + Buttons.getLevel());
 
         activateHeartBeat(false);
         heartRateView.setText(getString(R.string.heart_rate_default));
         timeView.setText(getString(R.string.time_default));
         colorLevelView.setText(R.string.start);
-        setColorAccordingToLevelOf(EDA_DEFAULT);
-        eda = EDA_DEFAULT;
+        setColorAccordingToLevelOf(VAL_1_DEFAULT);
+        val_1 = VAL_1_DEFAULT;
 
         lockDeviceRotation(false); // No rotation during resetting
 
     }
 
-    // ---------------------------------------------------------------------------------------------
+    //==============================================================================================
     // For Device Rotation
-    // ---------------------------------------------------------------------------------------------
+    //==============================================================================================
 
     private void checkAndSetOrientationInfo() {
         int currentOrientation = getResources().getConfiguration().orientation;
@@ -962,12 +1087,17 @@ public class ColorFragment extends Fragment {
         if(ColorViewModel.previousOrientation != Configuration.ORIENTATION_UNDEFINED // starting undefined
                 && ColorViewModel.previousOrientation != currentOrientation) {
 
-            ColorViewModel.rotating = true;
+            //ColorViewModel.rotating = true;
+            colorViewModel.changeContinuant(0,true);
+
         } else{
-            ColorViewModel.rotating = false;
+            //ColorViewModel.rotating = false;
+            colorViewModel.changeContinuant(0,false);
         }
-        //ColorViewModel.previousOrientation = currentOrientation;
+        // ColorViewModel.previousOrientation = currentOrientation;
     }
+
+    //----------------------------------------------------------------------------------------------
 
     private String getOrientationAsString(final int orientation) {
         if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -977,11 +1107,14 @@ public class ColorFragment extends Fragment {
         } else return "Undefined";
     }
 
+    //----------------------------------------------------------------------------------------------
+
     private void debugDescribeOrientations(final int currentOrientation) {
         Log.v("Orientation", "previousOrientation: " + getOrientationAsString(ColorViewModel.previousOrientation));
         Log.v("Orientation", "currentOrientation: " + getOrientationAsString(currentOrientation));
     }
 
+    //----------------------------------------------------------------------------------------------
 
     private void lockDeviceRotation(boolean value) {
         Activity activity = getActivity();
@@ -994,7 +1127,7 @@ public class ColorFragment extends Fragment {
             }
 
 
-            // records orientation before orientation will become unlocked again.
+            // Records orientation before orientation will become unlocked again.
             ColorViewModel.previousOrientation=currentOrientation;
             toBeSaved = false;
 

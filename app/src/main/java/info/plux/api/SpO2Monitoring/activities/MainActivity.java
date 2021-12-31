@@ -22,9 +22,9 @@ public class MainActivity extends AppCompatActivity {
     public final static String EXTRA_DEVICE = "info.plux.pluxandroid.DeviceActivity.EXTRA_DEVICE";
     private TabLayout tabs;
 
-    // *********************************************************************************************
-    // Methods
-    // *********************************************************************************************
+    //**********************************************************************************************
+    // Lifecycle Callbacks
+    //**********************************************************************************************
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //----------------------------------------------------------------------------------------------
+
     @Override
     public void onResume() {
         super.onResume();
@@ -49,10 +51,16 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //----------------------------------------------------------------------------------------------
+
     @Override
     public void onPause() {
         super.onPause();
     }
+
+    //**********************************************************************************************
+    // Other Methods
+    //**********************************************************************************************
 
     @Override
     public void onBackPressed() {
@@ -66,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 ColorViewModel.comeback=true;
-                ColorFragment.Buttons.setLevel(0);
+                ColorViewModel.isInitialized = false;
                 startActivity(intent);
                 Log.v(TAG,"ON BACK PRESSED");
                 break;
@@ -78,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //----------------------------------------------------------------------------------------------
 
     /**
      * Make BluetoothDevice available in main fragments

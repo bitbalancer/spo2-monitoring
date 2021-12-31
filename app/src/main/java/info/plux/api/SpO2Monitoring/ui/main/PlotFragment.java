@@ -23,23 +23,30 @@ public class PlotFragment extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
 
     // for plotting
-    // time
-    protected static final int MIN_X = 0;
-    protected static final int MAX_X = 10;
-    // electrodermal activity
-    protected static final int MIN_EDA = 0;
-    protected static final int MAX_EDA = 100;
-    // heart rate
-    protected static final int MIN_ECG = -1;
-    protected static final int MAX_ECG = 1; // 75 for 1 deriv; // 8000 for 2 deriv
 
     protected static GraphView graph;
     protected static Viewport viewport;
 
+    // time
+    protected static final double MIN_X = 0;
+    protected static final double MAX_X = 10;
+    // SpO2 red, infrared
+    protected static final double MIN_VAL1 = 0;
+    protected static final double MAX_VAL1 = 1.25;
 
-    // *********************************************************************************************
+
+    // EDA
+    // protected static final double MIN_VAL1 = 0;
+    // protected static final double MAX_VAL1 = 8;
+
+    // ECG
+    // protected static final double MIN_VAL2 = -1;
+    // protected static final double MAX_VAL2 = 1; // 75 for 1 deriv; // 8000 for 2 deriv
+
+
+    //**********************************************************************************************
     // Methods
-    // *********************************************************************************************
+    //**********************************************************************************************
 
 
     public static PlotFragment newInstance(int index) {
@@ -52,6 +59,7 @@ public class PlotFragment extends Fragment {
 
     }
 
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -61,6 +69,7 @@ public class PlotFragment extends Fragment {
         return root;
     }
 
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -69,20 +78,20 @@ public class PlotFragment extends Fragment {
         graph = root.findViewById(R.id.graph);
         viewport = graph.getViewport();
 
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         // Graph Customization
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
 
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //==========================================================================================
         // Axes
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //==========================================================================================
 
         // Changes axis label
         graph.getGridLabelRenderer().setNumHorizontalLabels(4);
         graph.getGridLabelRenderer().setHorizontalAxisTitle("time");
 
 
-        // Custom label formatter to show unit "µS"
+        // Custom label formatter to show the desired unit
         graph.getGridLabelRenderer().setLabelFormatter(new DefaultLabelFormatter() {
             @Override
             public String formatLabel(double value, boolean isValueX) {
@@ -90,33 +99,32 @@ public class PlotFragment extends Fragment {
                     // show normal x values
                     return super.formatLabel(value, isValueX) + " s";
                 } else {
-                    // show currency for y values
-                    return super.formatLabel(value, isValueX) + " %";
+                    // show unit for SpO2 signals
+                    return super.formatLabel(value, isValueX) + " µA"; // µS for EDA
                 }
             }
         });
 
+//        // Second y-axis
+//        graph.getSecondScale().setLabelFormatter(new DefaultLabelFormatter() {
+//            @Override
+//            public String formatLabel(double value, boolean isValueX) {
+//                if (isValueX) {
+//                    // show normal x values
+//                    return super.formatLabel(value, isValueX) + " s";
+//                } else {
+//                    // show currency for y values
+//                    return super.formatLabel(value, isValueX) + " " + Html.fromHtml("<sup>-3</sup>V") // mV for ECG
+//                }
+//            }
+//        });
+//
+//        graph.getGridLabelRenderer().setVerticalLabelsSecondScaleColor(Color.RED);
 
-        // Second y-axis
-        graph.getSecondScale().setLabelFormatter(new DefaultLabelFormatter() {
-            @Override
-            public String formatLabel(double value, boolean isValueX) {
-                if (isValueX) {
-                    // show normal x values
-                    return super.formatLabel(value, isValueX) + " s";
-                } else {
-                    // show currency for y values
-                    return super.formatLabel(value, isValueX) + " " + Html.fromHtml("mV"); //"<sup>-1</sup>"
-                }
-            }
-        });
 
-        graph.getGridLabelRenderer().setVerticalLabelsSecondScaleColor(Color.RED);
-
-
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //==========================================================================================
         // View on Graph
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //==========================================================================================
 
         // activates horizontal zooming and scrolling
         viewport.setScalable(true);
@@ -140,12 +148,13 @@ public class PlotFragment extends Fragment {
 
         // sets manual Y bounds
         viewport.setYAxisBoundsManual(true);
-        viewport.setMinY(MIN_EDA);
-        viewport.setMaxY(MAX_EDA);
+        viewport.setMinY(MIN_VAL1);
+        viewport.setMaxY(MAX_VAL1);
 
-        // the y bounds are always manual for second scale
-        graph.getSecondScale().setMinY(MIN_ECG);
-        graph.getSecondScale().setMaxY(MAX_ECG);
+
+        // The y bounds are always manual for second scale.
+        // graph.getSecondScale().setMinY(MIN_VAL2);
+        // graph.getSecondScale().setMaxY(MAX_VAL2);
 
     }
 
