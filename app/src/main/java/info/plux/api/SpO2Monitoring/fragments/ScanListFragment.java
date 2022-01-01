@@ -34,9 +34,9 @@ public class ScanListFragment extends ListFragment implements AdapterView.OnItem
     private String deviceName, deviceAddress;
     CustomArrayAdapter adapter;
 
-    // *********************************************************************************************
+    //**********************************************************************************************
     // Class
-    // *********************************************************************************************
+    //**********************************************************************************************
 
     private class CustomArrayAdapter<T> extends ArrayAdapter<T>{
 
@@ -56,9 +56,9 @@ public class ScanListFragment extends ListFragment implements AdapterView.OnItem
 
     }
 
-    // *********************************************************************************************
+    //**********************************************************************************************
     // Lifecycle Callbacks
-    // *********************************************************************************************
+    //**********************************************************************************************
 
     @Override
     public View onCreateView(LayoutInflater inflater,
@@ -68,6 +68,8 @@ public class ScanListFragment extends ListFragment implements AdapterView.OnItem
         uniqueDevices = new ArrayList();
         return view;
     }
+
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -99,9 +101,9 @@ public class ScanListFragment extends ListFragment implements AdapterView.OnItem
 
     }
 
-    // *********************************************************************************************
+    //**********************************************************************************************
     // Other Methods
-    // *********************************************************************************************
+    //**********************************************************************************************
 
     /**
      * Defines what happens when list item is clicked.
@@ -140,12 +142,16 @@ public class ScanListFragment extends ListFragment implements AdapterView.OnItem
 
     }
 
+    //----------------------------------------------------------------------------------------------
+
     /**
      *  Makes clicking on devices ineffective
      */
     public void setItemsClickable(boolean itemsClickable) {
         this.itemsClickable = itemsClickable;
     }
+
+    //----------------------------------------------------------------------------------------------
 
     /**
      *  Removes duplicates from an ArrayList

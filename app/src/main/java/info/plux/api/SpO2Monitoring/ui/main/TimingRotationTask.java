@@ -2,7 +2,7 @@ package info.plux.api.SpO2Monitoring.ui.main;
 
 import android.os.AsyncTask;
 
-public class TimeSlotTask extends AsyncTask<Void,Void,Void> {
+public class TimingRotationTask extends AsyncTask<Void,Void,Void> {
 
     @Override
     protected Void doInBackground(Void... voids) {

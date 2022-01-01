@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.jjoe64.graphview.series.DataPoint;
@@ -47,31 +48,29 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
     private static final LineGraphSeries<DataPoint> edaSeries = new LineGraphSeries<DataPoint>();
     private static final LineGraphSeries<DataPoint> hrSeries = new LineGraphSeries<DataPoint>();
     protected static LineGraphSeries<DataPoint>[] seriesArr = new LineGraphSeries[]{edaSeries,hrSeries};
-    private static double timeBefore = 0.; // for controlling
-    private static double time = 0.; // for recording the time when measurement was received
+    protected static double timeBefore = 0.; // for controlling
+    protected static double time = 0.; // for recording the time when measurement was received
     protected static int previousOrientation = Configuration.ORIENTATION_UNDEFINED;
-    protected static boolean rotating = false;
+    //protected static boolean rotating = false;
     protected static boolean inTime = false;
     protected static String state;
     public static boolean comeback = false;
+    public static boolean isInitialized = false;
     protected static String currentTime, previousTime;
 
-    /** When database reaches a certain size and hence the loading process takes some time,
-     * the observer is likely to register a change to database due to select queries in the loading process!
-     * This starts the heart beating undesired. Hence we use a boolean flag to prevent this side effect.
+    /** When the observer is registered to LiveData, LiveData becomes initialized and hence triggers the observer once.
+     * This starts the heart beating undesired. For this reason we use a boolean flag to prevent this side effect.
      * @see info.plux.api.SpO2Monitoring.ui.main.ColorFragment#onCreateView(LayoutInflater, ViewGroup, Bundle) inside_onCreateView
      */
     protected static boolean ignore = true;
-    protected static HandlerThread handlerThread;
-    protected static Handler loadAndInitHandler;
 
+    protected static HandlerThread writeHandlerThread;
     protected static WriteHandler writeHandler;
 
 
-    // *********************************************************************************************
-    // Classes
-    // *********************************************************************************************
-
+    //**********************************************************************************************
+    // Class
+    //**********************************************************************************************
 
     /**
      * WriteHandler prepares and processes the raw data which are received from messages by Biosignalsplux API
@@ -99,8 +98,8 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         private ArrayList<Double> stencil = new ArrayList<>();
         private final int POS = 2;
         private int indexCap;
-        private double eda;
-        private double ecg;
+        private double sig1, sig2;
+        private double eda, ecg;
         private double filteredEcg;
         private double heartRate;
         private double deriv2;
@@ -110,19 +109,22 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         private double rWavePrev;
         private double rrDistance;
         private boolean increasing;
-        private double pauseTime; // Time value when recording is interrupted
+        // Time value when recording is interrupted.
+        // Used for correct calculation of ECG.
+        private double timeWhenPausing;
 
         // PERIOD = 1/FREQUENCY
         // => PERIOD is the time interval in seconds between two measurements
         private final double PERIOD = 1. / (double) ColorFragment.FREQUENCY;
 
-        private SimpleMovingAverage ecgSMA, edaSMA, filteredEcgSMA, deriv2SMA;
+        private SimpleMovingAverage sig1SMA, sig2SMA;
+        private SimpleMovingAverage  edaSMA, ecgSMA, filteredEcgSMA, deriv2SMA;
         protected SimpleMovingAverage heartRateSMA;
 
 
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         // Inner Class
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
 
         public class SimpleMovingAverage{
 
@@ -130,11 +132,18 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
             private int index;
             private int period;
 
+            //--------------------------------------------------------------------------------------
+            // Constructor
+            //--------------------------------------------------------------------------------------
+
             SimpleMovingAverage(int period){
                 index = 0;
                 this.period = period;
             }
 
+            //--------------------------------------------------------------------------------------
+            // Methods
+            //--------------------------------------------------------------------------------------
 
             /**
              * This method adds numbers to its limited storage and returns their average value.
@@ -155,6 +164,8 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
 
                 return average(arr);
             }
+
+            //--------------------------------------------------------------------------------------
 
             /**
              * Calculates the mean value of all values in the list.
@@ -181,33 +192,30 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
                 return sum;
             }
 
+            //--------------------------------------------------------------------------------------
 
             /**
-             * All previous stored values are deleted. The current time value is saved.
-             * This is useful in case of an interruption of recording.
+             * All previously stored values are deleted.
+             * In case of an interrupt of recording the current time is saved to timeWhenPausing.
+             * In case of database clearing timeWhenPausing is set back to 0.
+             * @param clearingDatabase Set true when using reset due to database clearing
              */
-            protected void interrupt(){
+            protected void reset(boolean clearingDatabase){
                 arr.clear();
                 index = 0;
-                pauseTime = time;
-            }
-
-            /**
-             * All parameters are set to initial values.
-             * This should be used when the database is cleared.
-             */
-            protected void reset(){
-                arr.clear();
-                index = 0;
-                pauseTime = 0;
+                if(clearingDatabase) {
+                    timeWhenPausing = 0;
+                } else{
+                    timeWhenPausing = time;
+                }
             }
 
 
         }
 
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         // Constructor
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
 
 
         public WriteHandler(Looper looper, Context context) {
@@ -218,15 +226,19 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
             indexCap = 0;
 
             butterworth = new Butterworth();
-            butterworth.highPass(2, ColorFragment.FREQUENCY, 10); // sweet spot
+            // Used in calculation of RR distance
+            // butterworth.highPass(2, ColorFragment.FREQUENCY, 10); // sweet spot
             rWavePrev = 0;
             increasing = false;
             heartRate = -99; // Signals no valid value is available
             // See 2. observer in onViewCreated of ColorFragment
-            pauseTime = 0;
+            timeWhenPausing = 0;
 
 
             // These periods are the sweet spot with FREQUENCY = 1000 Hz!
+            sig1SMA = new SimpleMovingAverage(20);
+            sig2SMA = new SimpleMovingAverage(20);
+
             ecgSMA = new SimpleMovingAverage(20);
             edaSMA = new SimpleMovingAverage(20);
             filteredEcgSMA = new SimpleMovingAverage(300);
@@ -235,114 +247,190 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
 
         }
 
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
         // Methods
-        // -----------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------
 
 
         @Override
         public void handleMessage(Message msg) {
 
-            // -------------------------------------------------------------------------------------
-            // Preparation of Raw Data
-            // -------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
+            //  Preparation of Raw Data
+            //--------------------------------------------------------------------------------------
 
             // The data from Bioplux is stored in frame
             Bundle bundle = msg.getData();
             BiopluxFrame frame = bundle.getParcelable(FRAME);
+            // When adapting to other sensors, change Source[] of ColorFragment.
+            // Order of signals in analogData[] is equal to order of Sources.
             analogData = frame.getAnalogData();
-            eda = analogData[0];
-            ecg = analogData[1];
+
+//            // Debugging
+//            // Shows all received data in Logcat
+//            for(int i = 0; i < analogData.length; i++) {
+//
+//                Log.d(TAG,"analogData "+i+" : "+analogData[i]+"\n");
+//
+//            }
+
+
+
+//            // For EDA & ECG
+//
+//            eda = analogData[0];
+//            ecg = analogData[1];
+//
+//            // Converts raw data according to manuals of the used sensors.
+//            // We use ECG and EDA sensors (Biosignalsplux).
+//            eda = eda / Math.pow(2, 16) * 3 / 0.12; // Converts raw signal to µS
+//            ecg = (ecg / Math.pow(2, 16) - 0.5) * 3 / 1019; // Converts to V
+//            ecg = 1000 * ecg; // to mV
+//
+//            // Simple Moving Average
+//            ecg = ecgSMA.add(ecg); // Smooths out the graph
+//            eda = edaSMA.add(eda);
+//
+//            // Determines time of record
+//            time = time + PERIOD;
+//
+//            //--------------------------------------------------------------------------------------
+//            // Calculation of Heart Rate From ECG
+//            //--------------------------------------------------------------------------------------
+//
+//            // Filters away all low frequencies.
+//            // We just interested in the peaks of the signal
+//            filteredEcg = butterworth.filter(ecg); // High Pass filter
+//            filteredEcg = Math.pow(filteredEcg, 2);
+//            filteredEcg = filteredEcgSMA.add(filteredEcg);
+//
+//            if (time > 1 + timeWhenPausing) { // Signal at start or continuation of recording not reliable
+//                if (filteredEcg > THRESHOLD_R_WAVE && increasing) {
+//                    if (rWavePrev == 0) {
+//                        rWavePrev = dataRow.time;
+//                    } else {
+//                        rWaveNow = dataRow.time;
+//                        rrDistance = rWaveNow - rWavePrev;
+//                        heartRate = 60. / rrDistance; // result in bpm
+//                        heartRate = heartRateSMA.add(heartRate); // Filters noise
+//                        rWavePrev = rWaveNow;
+//                    }
+//                    increasing = false;
+//
+//                } else if (filteredEcg <= THRESHOLD_R_WAVE) {
+//                    increasing = true;
+//                }
+//            }
+//
+//            //--------------------------------------------------------------------------------------
+//            // 2. Derivative of ECG
+//            //--------------------------------------------------------------------------------------
+//
+//            stencil.add(ecg);
+//
+//            if (stencil.size() > 5) {
+//
+//                stencil.remove(0);
+//
+//                deriv2 = get2Derivative(stencil, PERIOD);
+//                deriv2 = deriv2SMA.add(deriv2); // This way extrema are recorded reliably
+//
+//                // If the absolute value of 2. derivative of ECG surpasses a certain limit,
+//                // maxima or minima (peaks) are expected to come.
+//                if (Math.abs(deriv2) > 3000) { // sweet spot
+//
+//                    indexCap = CAPTURE;
+//
+//                }
+//
+//            }
+//
+//            //--------------------------------------------------------------------------------------
+//            // Frequency Reduction
+//            //--------------------------------------------------------------------------------------
+//
+//            // Reduces frequency minimally to CAPTURE_FREQUENCY
+//            // This prevents intolerable delay between measuring and plotting the signal
+//            if (indexCap < CAPTURE) { // Saves values to database only when threshold is reached
+//                indexCap++;
+//            } else {
+//
+//                indexCap = 0;
+//
+//                dataRow.time = time;
+//                dataRow.val_1 = eda;
+//                dataRow.val_2 = ecg;
+//                dataRow.val_3 = (int) heartRate;
+//
+//                addNewRecordToDB(dataRow);
+//
+//                System.out.println("Time: " + dataRow.time + " s");
+//            }
+
+
 
             // Converts raw data according to manuals of the used sensors.
-            // We use ECG and EDA sensors by Biosignalsplux.
-            eda = eda / Math.pow(2, 16) * 3 / 0.12; // Converts raw signal to µS
-            ecg = (ecg / Math.pow(2, 16) - 0.5) * 3 / 1019; // Converts to V
-            ecg = 1000 * ecg; // to mV
+            // We use 1 and 2 channel of SpO2 sensor (Biosignalsplux).
+            sig1 = analogData[0]; // red
+            sig2 = analogData[1]; // infrared
+            sig1 = 1.2 * sig1 / (Math.pow(2,16) * 1 /*MOhm*/ ); // Converts to µA
+            sig2 = 1.2 * sig2 / (Math.pow(2,16) * 1 /*MOhm*/ ); // Converts to µA
 
-            // Determines recording time
+            // Simple moving average
+            sig1 = sig1SMA.add(sig1);
+            sig2 = sig2SMA.add(sig2);
+
+            // Fills dataRow
+            dataRow.time = time;
+            dataRow.val_1 = sig1;
+            dataRow.val_2 = sig2;
+            //--------------------------------------------------------------------------------------
+            dataRow.val_3 = 60; // dummy value
+            //--------------------------------------------------------------------------------------
+
+            /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+            TODO data processing to obtain SpO2 level in % from red and infrared signals
+
+            R = modulation ratio
+            AC_r = Alternating current in red spectrum
+            DC_r = Direct current in red spectrum
+            AC_ir = Alternating current in infrared spectrum
+            DC_ir = Direct current in infrared spectrum
+
+            R = (AC_r / DC_r) / (AC_ir / DC_ir)
+
+            R ~ Sp02 in %
+
+            AC = p-p amplitude of periodic component
+            DC = amplitude of offset component
+
+            AC and DC component could be obtained by high or low pass filter
+            Explained: The offset component is represented by low frequencies close to 0 in FFT.
+            The periodic component is represented by peaks at higher frequencies.
+            When amplitude of periodic component is not too small compared to the amplitude
+            of the offset component, peaks at higher frequencies are clearly recognizable in FFT.
+
+            To determine AC, find maximum and the following minimum of AC component by means of 1. and 2 derivative.
+            When 1. derivative is almost 0, the extremum is roughly reached. There may be less error prone
+            and preciser methods to determine the p-p amplitude.
+
+            That said, we could calculate R from our results so far. The functional relation
+            between R and SpO2 must be derived from any source.
+
+            >>> PROBLEM: The Sensor does not deliver signals with distinctive AC components!
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
+
+
+            // Determines time of record
             time = time + PERIOD;
-            // Applies SMA
-            ecg = ecgSMA.add(ecg); // Smooths out the graph
-            eda = edaSMA.add(eda);
 
-            // -------------------------------------------------------------------------------------
-            // Calculation of Heart Rate From ECG
-            // -------------------------------------------------------------------------------------
+            addNewRecordToDB(dataRow);
 
-            // Filters away all low frequencies.
-            // We just interested in the peaks of the signal
-            filteredEcg = butterworth.filter(ecg); // Low Pass filter
-            filteredEcg = Math.pow(filteredEcg, 2);
-            filteredEcg = filteredEcgSMA.add(filteredEcg);
-
-            if (time > 1 + pauseTime) { // Signal at start or continuation of recording not reliable
-                if (filteredEcg > THRESHOLD_R_WAVE && increasing) {
-                    if (rWavePrev == 0) {
-                        rWavePrev = dataRow.time;
-                    } else {
-                        rWaveNow = dataRow.time;
-                        rrDistance = rWaveNow - rWavePrev;
-                        heartRate = 60. / rrDistance; // result in bpm
-                        heartRate = heartRateSMA.add(heartRate); // Filters noise
-                        rWavePrev = rWaveNow;
-                    }
-                    increasing = false;
-
-                } else if (filteredEcg <= THRESHOLD_R_WAVE) {
-                    increasing = true;
-                }
-            }
-
-            // -------------------------------------------------------------------------------------
-            // 2. Derivative of ECG
-            // -------------------------------------------------------------------------------------
-
-            stencil.add(ecg);
-
-            if (stencil.size() > 5) {
-
-                stencil.remove(0);
-
-                deriv2 = get2Derivative(stencil, PERIOD);
-                deriv2 = deriv2SMA.add(deriv2); // This way extrema are recorded reliably
-
-                // If the absolute value of 2. derivative of ECG surpasses a certain limit,
-                // maxima or minima (peaks) are expected to come.
-                if (Math.abs(deriv2) > 3000) { // sweet spot
-
-                    indexCap = CAPTURE;
-
-                }
-
-            }
-
-            // -------------------------------------------------------------------------------------
-            // Frequency Reduction
-            // -------------------------------------------------------------------------------------
-
-            // Reduces frequency minimally to CAPTURE_FREQUENCY
-            // This prevents intolerable delay between measuring and plotting the signal
-            if (indexCap < CAPTURE) { // Saves values to database only when threshold is reached
-                indexCap++;
-            } else {
-
-                indexCap = 0;
-
-
-                dataRow.time = time;
-                dataRow.electrodermalActivity = eda;
-                dataRow.electroCardiogram = ecg; // ECG;
-                dataRow.heartRate = (int) heartRate;
-
-
-                // Store as well as display data simultaneously
-                updateUI(dataRow);
-
-                System.out.println("Input: " + dataRow.time);
-            }
         }
 
+        //------------------------------------------------------------------------------------------
 
         /**
          * 5-point stencil method to determine second derivative
@@ -355,48 +443,57 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
 
             return (-1 * f.get(POS - 2) + 16 * f.get(POS - 1) - 30 * f.get(POS + 0) + 16 * f.get(POS + 1) - 1 * f.get(POS + 2)) / (12 * 1.0 * Math.pow(h, 2));
 
-            // first derivative
-            // return ( 1 * f.get(POS-2) - 8 * f.get(POS-1) + 0 * f.get(POS+0) + 8 * f.get(POS+1) - 1 * f.get(POS+2) ) / ( 12 * 1.0 * Math.pow(h,1) );
-
         }
 
+        //------------------------------------------------------------------------------------------
+
+//        // first derivative
+//        private double get1Derivative(ArrayList<Double> f, double h) {
+//
+//            return ( 1 * f.get(POS-2) - 8 * f.get(POS-1) + 0 * f.get(POS+0) + 8 * f.get(POS+1) - 1 * f.get(POS+2) ) / ( 12 * 1.0 * Math.pow(h,1) );
+//
+//        }
 
         /**
          * Saves the new dataRow to the database
          *
          * @param dataRow
          */
-        private void updateUI(DataRow dataRow) {
+        private void addNewRecordToDB(DataRow dataRow) {
 
-            // -------------------------------------------------------------------------------------
-            // Monitoring and Controlling
-            // -------------------------------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
+            // Checking
+            //--------------------------------------------------------------------------------------
 
             if (seriesArr[0].isEmpty()) {
                 Log.d(TAG,"Series empty");
             }
-            Log.v(TAG,"Time = " + dataRow.time);
-            Log.v(TAG,"EDA = "+dataRow.electrodermalActivity);
-            Log.v(TAG,"EKG = "+dataRow.electroCardiogram);
 
-            // Kept for debugging
-            //System.out.println(seriesArr[0].getLowestValueX());
-            //System.out.println(seriesArr[0].getHighestValueX());
+
+            System.out.println("time: " + dataRow.time + " sec\n"
+                    +"val_1: "+ dataRow.val_1 + "\n"
+                    +"val_2: "+ dataRow.val_2 + "\n"
+                    +"val_3: "+ dataRow.val_3 + "\n" );
+
+
+            // Debugging
+            // System.out.println(seriesArr[0].getLowestValueX());
+            // System.out.println(seriesArr[0].getHighestValueX());
 
             // Controls to eliminate the possibility of IllegalArgumentException.
             // Explanation: appendData is called in observer that observes changes to database.
             // appendData throws error when x values (time) are not in strictly ascending order.
             if (timeBefore < dataRow.time) {
 
-                // ---------------------------------------------------------------------------------
-                // Actual Work
-                // ---------------------------------------------------------------------------------
+                //----------------------------------------------------------------------------------
+                // Update
+                //----------------------------------------------------------------------------------
 
                 // The data is stored persistently to load it later again after activity lifecycle has ended.
                 // At the same time Observer in ColorFragment registers change to database and updates UI.
                 // Remember: Do not try to to touch View of UI thread from another thread!
                 // Never use appendData here => ConcurrentModificationException.
-                mDB.dataRowDAO().insertAll(dataRow);
+                mDB.dataRowDAO().insertAll(dataRow); // Triggers UI update
                 timeBefore = dataRow.time;
             } else{
                 Log.w(TAG,"Time value LOWER OR EQUAL than before: " + dataRow.time);
@@ -410,147 +507,137 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
 
     }
 
+    //**********************************************************************************************
+    // Methods & Further Attributes
+    //**********************************************************************************************
 
-    /**
-     *  Used for loading data from database when app is started
-     */
-    protected class LoadAndInitHandler extends Handler {
-        private MeasureDB mDB;
-        private List<DataRow> dataRows;
-        private DataRow row;
+    //----------------------------------------------------------------------------------------------
+    // Enable/Disable Buttons
+    //----------------------------------------------------------------------------------------------
 
-        public LoadAndInitHandler(Looper looper, MeasureDB mDB) {
-            super(looper);
-            this.mDB = mDB;
+    // loading finished, connected, no cool down, no clearing
+    private Boolean[] clickableConditionals = new Boolean[]{false, false, true, true};
+    private MutableLiveData<Boolean[]> clickable;
+
+    public MutableLiveData<Boolean[]> getClickable() {
+        if (clickable == null) {
+            clickable = new MutableLiveData<Boolean[]>(clickableConditionals);
         }
+        return clickable;
+    }
 
-        // Warning: Never update ui elements in no other thread than main thread. Otherwise this will throw an error!
-        @Override
-        public void handleMessage(Message msg) {
+    public void changeClickable(int condition, boolean satisfied){
+        boolean previousSatisfied;
 
-            if(msg.what==0) {
-                Log.i(TAG,"+++++++++++++++++++++++++++++++++++++" + " Loading started " + "+++++++++++++++++++++++++++++++++++++");
-
-                dataRows = mDB.dataRowDAO().getAllRows();
-
-                if (!dataRows.isEmpty()) {
-                    // If order of x values (time) is NOT ascending than clear corrupt database
-                    // Probably due to disconnect during usage
-                    try {
-                        // Sets time to last values.
-                        time = mDB.dataRowDAO().getLastRow().time;
-                        timeBefore = time;
-                        Log.i(TAG,"This is the last time in database: " + time + " +++++++++++++++++++++++++++++++++++++");
-                        // Fills array with LineGraphSeries.
-                        seriesArr[0] = convertDataRowsToEdaSeries(dataRows);
-                        seriesArr[1] = convertDataRowsToHrSeries(dataRows);
-                    } catch (IllegalArgumentException ex) {
-                        Log.w(TAG," Illegal Argument Exception: false order of x values. Database has been cleared.");
-                        ColorFragment.clearDatabase();
-                    } catch (NullPointerException ex) {
-                        Log.w(TAG,"Missing values in data row. Database has been cleared.");
-                        ColorFragment.clearDatabase();
-                    }
-                } else {
-                    Log.i(TAG,"Nothing to load. Database empty.");
-                }
-
-                // Warning: Do not try to to touch View of UI thread from another thread!
-                // Remember: In another thread than main thread use postValue instead of setValue.
-                // The series are added to the graph when isLoaded is observed.
-
-                previousTime = ColorFragment.FancyStringConverter.convert(time);
-                ColorFragment.isLoaded.postValue(mDB.dataRowDAO().getLastRow());
-                Log.i(TAG,"+++++++++++++++++++++++++++++++++++++" + " Loading finished " + "+++++++++++++++++++++++++++++++++++++");
-            }
-            else{
-                ColorFragment.isLoaded.postValue(mDB.dataRowDAO().getLastRow());
-            }
-            ignore = false;
-            Log.d(TAG,"+++++++++++++++++++++++++++++++++++++" + " isLoaded has been changed! " + "+++++++++++++++++++++++++++++++++++++");
-        }
-
-
-        /**
-         * Converts a List of DataRows from the database to a LineGraphSeries of DataPoints.
-         * Time and EDA are extracted from the DataRow and converted to a DataPoint.
-         *
-         * @param dataRows List of DataRows
-         * @return The result is added to the graph.
-         */
-        // Converts data from database to format usable for graph.
-        private LineGraphSeries<DataPoint> convertDataRowsToEdaSeries(List<DataRow> dataRows) {
-            int length = dataRows.size();
-            DataPoint[] dataPoints = new DataPoint[length];
-
-
-            ListIterator<DataRow> dataRowIterator = dataRows.listIterator();
-            while (dataRowIterator.hasNext()) {
-                row = dataRowIterator.next();
-                System.out.println("Time from DB: " + row.time);
-                dataPoints[dataRowIterator.previousIndex()] = new DataPoint( row.time , row.electrodermalActivity );
-            }
-
-            return new LineGraphSeries<DataPoint>(dataPoints);
-        }
-
-        /**
-         * Converts a List of DataRows from the database to a LineGraphSeries of DataPoints.
-         * Time and ECG are extracted from the DataRow and converted to a DataPoint.
-         *
-         * @param dataRows List of DataRows
-         * @return The result is added to the graph.
-         */
-        private LineGraphSeries<DataPoint> convertDataRowsToHrSeries(List<DataRow> dataRows) {
-            int length = dataRows.size();
-            DataPoint[] dataPoints = new DataPoint[length];
-
-
-            ListIterator<DataRow> dataRowIterator = dataRows.listIterator();
-            while (dataRowIterator.hasNext()) {
-                row = dataRowIterator.next();
-                dataPoints[dataRowIterator.previousIndex()] = new DataPoint( row.time, row.electroCardiogram );
-            }
-
-            return new LineGraphSeries<DataPoint>(dataPoints);
+        Boolean[] conditionals = clickable.getValue();
+        if( condition < 0 || condition >= conditionals.length){
+            Log.w(TAG, "Clickable could not be changed! Length: "+conditionals.length+"\n Condition: "+condition+" out of range.");
+        } else {
+            previousSatisfied = conditionals[condition];
+            conditionals[condition] = Boolean.valueOf(satisfied);
+            clickable.setValue(conditionals);
+            Log.d(TAG,"Clickable condition "+condition+" : "+ previousSatisfied+" --> "+satisfied);
         }
     }
 
-    // *********************************************************************************************
-    // Methods
-    // *********************************************************************************************
+    //----------------------------------------------------------------------------------------------
+    // Rotating & Continuant Recording
+    //----------------------------------------------------------------------------------------------
 
+    // rotating, recording, inTime
+    private Boolean[] continuant = new Boolean[]{false, false, false};
+
+
+    public void changeContinuant(int condition, boolean satisfied){
+        boolean previousSatisfied;
+
+        if( condition < 0 || condition >= continuant.length){
+            Log.w(TAG, "Continuant could not be changed! Length: "+continuant.length+"\n Condition: "+condition+" out of range.");
+        } else {
+            previousSatisfied = continuant[condition];
+            continuant[condition] = satisfied;
+            Log.d(TAG,"Rotation condition "+condition+" : "+ previousSatisfied+" --> "+satisfied);
+        }
+    }
+
+    public boolean getRotating(){
+        return continuant[0];
+    }
+
+    public boolean checkContinuant() {
+        boolean isSatisfied = true;
+        int leng = continuant.length;
+
+        // Checks if all conditions are satisfied.
+        for (int i = 0; i < leng; i++) {
+            isSatisfied = isSatisfied && continuant[i];
+        }
+
+        return isSatisfied;
+    }
+
+    //----------------------------------------------------------------------------------------------
 
     /**
      *  When the user starts the app, this method does the necessary preparations before user interaction.
      *  Data from database is loaded, the handler writing to database is created
      *  and the communication with the Bioplux hub is established.
      *
-     * @param context of ColorFragment
+     * @param colorFragment
      */
-    protected void prepare(Context context) {
+    protected void initialize(ColorFragment colorFragment) {
+        Context context = colorFragment.getContext();
 
-        // 1. Loads previous data from database with help of LoadAndInitHandler
-        handlerThread.start(); // Make sure to start handlerThread before you pass it over to the Handler!
-        loadAndInitHandler = new LoadAndInitHandler(handlerThread.getLooper(), MeasureDB.getInstance(context));
-        loadAndInitHandler.sendEmptyMessage(0);
+        //------------------------------------------------------------------------------------------
+        // 1. Create Handler for data processing
+        //------------------------------------------------------------------------------------------
 
-        // 2. Creates and starts WriteHandler to process new data
-        HandlerThread handlerThread = new HandlerThread("WriteHandler");
-        handlerThread.start();
+        writeHandlerThread = new HandlerThread("Write");
+        writeHandlerThread.start();
 
-        WriteHandler writeHandler = new WriteHandler(handlerThread.getLooper(), context);
+        WriteHandler writeHandler = new WriteHandler(writeHandlerThread.getLooper(), context);
 
         this.writeHandler = writeHandler;
 
-        // 3. Creates BiopluxCommunication object for controlling data flow
-        setUpBiopluxCommunication(context, MainActivity.getBluetoothDevice());
+
+        //------------------------------------------------------------------------------------------
+        // 2. Loading Data
+        //------------------------------------------------------------------------------------------
+
+        LoadingTask loadingTask = new LoadingTask(colorFragment);
+        loadingTask.execute();
+
+        //------------------------------------------------------------------------------------------
+        // 3. Setup Communication with hub
+        //------------------------------------------------------------------------------------------
+
+        //setUpBiopluxCommunication(context, MainActivity.getBluetoothDevice());
+
+        BluetoothDevice bluetoothDevice = MainActivity.getBluetoothDevice();
+
+        Communication communication = Communication.getById(bluetoothDevice.getType());
+        Log.d(TAG, "Communication: " + communication.name());
+        if (communication.equals(Communication.DUAL)) {
+            communication = Communication.BTH;
+        }
+
+        Log.d(TAG, "communication: " + communication.name());
+
+        bioplux = new BiopluxCommunicationFactory().getCommunication(communication, context, this);
+
+        try {
+            bioplux.connect(bluetoothDevice.getAddress());
+        } catch (BiopluxException e) {
+            e.printStackTrace();
+        }
 
     }
 
+    //----------------------------------------------------------------------------------------------
 
     /**
      *  Sets up communication with Bioplux hub
+     *  Used extra in case of comeback
      */
     protected void setUpBiopluxCommunication(Context context, BluetoothDevice bluetoothDevice){
 
@@ -573,6 +660,8 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
 
     }
 
+    //----------------------------------------------------------------------------------------------
+
     /**
      * The DataPoints of LineGraphSeries are replaced by an empty Array.
      * The view point on the graph is shifted back to the initial state.
@@ -585,7 +674,7 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         seriesArr[0].resetData(new DataPoint[]{});
         seriesArr[1].resetData(new DataPoint[]{});
 
-        // Little trick to reset focus like when app is started
+        // Little trick to reset focus as same as when app is started
         seriesArr[0].appendData(new DataPoint(PlotFragment.MAX_X,0),true,1);
         seriesArr[1].appendData(new DataPoint(PlotFragment.MAX_X,0),true,1);
 
@@ -595,15 +684,9 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         Log.v("clearSeriesArr","Data array cleared");
     }
 
-
-    protected static void setTimes(){
-        timeBefore = 0.;
-        time = 0.;
-    }
-
-    // ---------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------
     // OnBiopluxDataAvailable Interface
-    // ---------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------
 
     /**
      * Every message contains one measurement.
@@ -618,6 +701,8 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         message.setData(bundle);
         writeHandler.sendMessage(message);
     }
+
+    //----------------------------------------------------------------------------------------------
 
     @Override
     public void onBiopluxDataAvailable(String identifier, int[] biopluxFrame) {
