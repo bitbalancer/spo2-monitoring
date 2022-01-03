@@ -5,7 +5,7 @@
     android:id="@+id/fragment_color"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".old.DeviceActivity">
+    tools:context=".ui.main.ColorFragment">
 
 
     <info.plux.api.SpO2Monitoring.thermometer.Thermometer

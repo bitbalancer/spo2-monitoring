@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import info.plux.api.SpO2Monitoring.activities.MainActivity;
 import info.plux.api.SpO2Monitoring.database.DataRow;
@@ -42,30 +43,30 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
     private final String TAG = this.getClass().getSimpleName();
 
     // used in Biosignalsplux communication
-    public static BiopluxCommunication bioplux;
+    private BiopluxCommunication biopluxCommunication;
     public final static String FRAME = "info.plux.pluxandroid.DeviceActivity.Frame";
 
-    private static final LineGraphSeries<DataPoint> edaSeries = new LineGraphSeries<DataPoint>();
-    private static final LineGraphSeries<DataPoint> hrSeries = new LineGraphSeries<DataPoint>();
-    protected static LineGraphSeries<DataPoint>[] seriesArr = new LineGraphSeries[]{edaSeries,hrSeries};
-    protected static double timeBefore = 0.; // for controlling
-    protected static double time = 0.; // for recording the time when measurement was received
-    protected static int previousOrientation = Configuration.ORIENTATION_UNDEFINED;
-    //protected static boolean rotating = false;
-    protected static boolean inTime = false;
-    protected static String state;
-    public static boolean comeback = false;
-    public static boolean isInitialized = false;
-    protected static String currentTime, previousTime;
+    private final LineGraphSeries<DataPoint> series1 = new LineGraphSeries<DataPoint>();
+    private final LineGraphSeries<DataPoint> series2 = new LineGraphSeries<DataPoint>();
+    private LineGraphSeries<DataPoint>[] seriesArr = new LineGraphSeries[]{series1,series2};
+    private double timeBefore = 0.; // for controlling
+    private double time = 0.; // for recording the time when measurement was received
+    private int previousOrientation = Configuration.ORIENTATION_UNDEFINED;
+    protected static boolean inTime = false; // not used
+    private String state;
+    private boolean initialized = false;
+    private String currentTime, previousTime;
+    private boolean running = false;
+    private boolean resuming = false;
 
     /** When the observer is registered to LiveData, LiveData becomes initialized and hence triggers the observer once.
      * This starts the heart beating undesired. For this reason we use a boolean flag to prevent this side effect.
      * @see info.plux.api.SpO2Monitoring.ui.main.ColorFragment#onCreateView(LayoutInflater, ViewGroup, Bundle) inside_onCreateView
      */
-    protected static boolean ignore = true;
+    private boolean ignore = true;
 
-    protected static HandlerThread writeHandlerThread;
-    protected static WriteHandler writeHandler;
+    private HandlerThread writeToDBHandlerThread;
+    private WriteToDBHandler writeToDBHandler;
 
 
     //**********************************************************************************************
@@ -75,7 +76,7 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
     /**
      * WriteHandler prepares and processes the raw data which are received from messages by Biosignalsplux API
      */
-    protected class WriteHandler extends Handler {
+    protected class WriteToDBHandler extends Handler {
 
         /* Hint:
         1000 Measurements per second are necessary to get a proper ECG signal.
@@ -218,7 +219,7 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         //------------------------------------------------------------------------------------------
 
 
-        public WriteHandler(Looper looper, Context context) {
+        public WriteToDBHandler(Looper looper, Context context) {
             super(looper);
             mDB = MeasureDB.getInstance(context);
             dataRow = new DataRow();
@@ -541,106 +542,51 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
     }
 
     //----------------------------------------------------------------------------------------------
-    // Rotating & Continuant Recording
-    //----------------------------------------------------------------------------------------------
-
-    // rotating, recording, inTime
-    private Boolean[] continuant = new Boolean[]{false, false, false};
-
-
-    public void changeContinuant(int condition, boolean satisfied){
-        boolean previousSatisfied;
-
-        if( condition < 0 || condition >= continuant.length){
-            Log.w(TAG, "Continuant could not be changed! Length: "+continuant.length+"\n Condition: "+condition+" out of range.");
-        } else {
-            previousSatisfied = continuant[condition];
-            continuant[condition] = satisfied;
-            Log.d(TAG,"Rotation condition "+condition+" : "+ previousSatisfied+" --> "+satisfied);
-        }
-    }
-
-    public boolean getRotating(){
-        return continuant[0];
-    }
-
-    public boolean checkContinuant() {
-        boolean isSatisfied = true;
-        int leng = continuant.length;
-
-        // Checks if all conditions are satisfied.
-        for (int i = 0; i < leng; i++) {
-            isSatisfied = isSatisfied && continuant[i];
-        }
-
-        return isSatisfied;
-    }
-
-    //----------------------------------------------------------------------------------------------
 
     /**
      *  When the user starts the app, this method does the necessary preparations before user interaction.
      *  Data from database is loaded, the handler writing to database is created
      *  and the communication with the Bioplux hub is established.
      *
-     * @param colorFragment
+     * @param cf
      */
-    protected void initialize(ColorFragment colorFragment) {
-        Context context = colorFragment.getContext();
+    protected void initialize(ColorFragment cf) {
 
-        //------------------------------------------------------------------------------------------
-        // 1. Create Handler for data processing
-        //------------------------------------------------------------------------------------------
+        prepareWriterToDBHandler(cf);
 
-        writeHandlerThread = new HandlerThread("Write");
-        writeHandlerThread.start();
+        loadPreviousDataFromDB(cf);
 
-        WriteHandler writeHandler = new WriteHandler(writeHandlerThread.getLooper(), context);
-
-        this.writeHandler = writeHandler;
-
-
-        //------------------------------------------------------------------------------------------
-        // 2. Loading Data
-        //------------------------------------------------------------------------------------------
-
-        LoadingTask loadingTask = new LoadingTask(colorFragment);
-        loadingTask.execute();
-
-        //------------------------------------------------------------------------------------------
-        // 3. Setup Communication with hub
-        //------------------------------------------------------------------------------------------
-
-        //setUpBiopluxCommunication(context, MainActivity.getBluetoothDevice());
-
-        BluetoothDevice bluetoothDevice = MainActivity.getBluetoothDevice();
-
-        Communication communication = Communication.getById(bluetoothDevice.getType());
-        Log.d(TAG, "Communication: " + communication.name());
-        if (communication.equals(Communication.DUAL)) {
-            communication = Communication.BTH;
-        }
-
-        Log.d(TAG, "communication: " + communication.name());
-
-        bioplux = new BiopluxCommunicationFactory().getCommunication(communication, context, this);
-
-        try {
-            bioplux.connect(bluetoothDevice.getAddress());
-        } catch (BiopluxException e) {
-            e.printStackTrace();
-        }
+        setUpBiopluxCommunication(cf);
 
     }
 
-    //----------------------------------------------------------------------------------------------
+    private void prepareWriterToDBHandler(ColorFragment cf){
+
+        Context context = cf.getContext();
+
+        writeToDBHandlerThread = new HandlerThread("WriteToDB");
+        writeToDBHandlerThread.start();
+
+        WriteToDBHandler writeHandler = new WriteToDBHandler(writeToDBHandlerThread.getLooper(), context);
+
+        this.writeToDBHandler = writeHandler;
+    }
+
+    private void loadPreviousDataFromDB(ColorFragment cf){
+        LoadingTask loadingTask = new LoadingTask(cf);
+        loadingTask.execute();
+    }
 
     /**
      *  Sets up communication with Bioplux hub
      *  Used extra in case of comeback
      */
-    protected void setUpBiopluxCommunication(Context context, BluetoothDevice bluetoothDevice){
+    private void setUpBiopluxCommunication(ColorFragment cf){
 
+        Context context = cf.getContext();
+
+        // Gets bluetooth device from MainActivity
+        BluetoothDevice bluetoothDevice = ( (MainActivity) cf.getActivity() ).getBluetoothDevice();
 
         Communication communication = Communication.getById(bluetoothDevice.getType());
         Log.d(TAG, "Communication: " + communication.name());
@@ -650,10 +596,10 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
 
         Log.d(TAG, "communication: " + communication.name());
 
-        bioplux = new BiopluxCommunicationFactory().getCommunication(communication, context, this);
+        biopluxCommunication = new BiopluxCommunicationFactory().getCommunication(communication, context, this);
 
         try {
-            bioplux.connect(bluetoothDevice.getAddress());
+            biopluxCommunication.connect(bluetoothDevice.getAddress());
         } catch (BiopluxException e) {
             e.printStackTrace();
         }
@@ -666,7 +612,7 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
      * The DataPoints of LineGraphSeries are replaced by an empty Array.
      * The view point on the graph is shifted back to the initial state.
      */
-    protected static void clearSeriesArr(){
+    protected void clearSeriesArr(){
         // To keep the same LineGraphSeries objects as in declaration is crucial.
         // Overriding like below makes app unstable and easily crash when database gets cleared.
         //edaSeries = new LineGraphSeries<DataPoint>();
@@ -695,11 +641,11 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
      */
     @Override
     public void onBiopluxDataAvailable(BiopluxFrame biopluxFrame) {
-        Message message = writeHandler.obtainMessage();
+        Message message = writeToDBHandler.obtainMessage();
         Bundle bundle = new Bundle();
         bundle.putParcelable(FRAME, biopluxFrame);
         message.setData(bundle);
-        writeHandler.sendMessage(message);
+        writeToDBHandler.sendMessage(message);
     }
 
     //----------------------------------------------------------------------------------------------
@@ -709,4 +655,67 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         Log.d(TAG, identifier + ": " + Arrays.toString(biopluxFrame));
     }
 
+    //----------------------------------------------------------------------------------------------
+    // Getter and Setter
+    //----------------------------------------------------------------------------------------------
+
+    public boolean getRunning(){
+        return running;
+    }
+
+    public boolean getResuming(){ return resuming; }
+
+    public boolean getIgnore(){ return ignore; }
+
+    public boolean getInitialized(){ return initialized; }
+
+    public String getState(){ return state; }
+
+    public int getPreviousOrientation(){ return previousOrientation; }
+
+    public String getCurrentTime(){ return currentTime; }
+
+    public String getPreviousTime(){ return previousTime; }
+
+    public WriteToDBHandler getWriteToDBHandler(){ return writeToDBHandler; }
+
+    public LineGraphSeries<DataPoint>[] getSeriesArr(){ return seriesArr; }
+
+    public LineGraphSeries<DataPoint> getSeries(int pos){ return seriesArr[pos]; }
+
+    public double getTime(){ return time; }
+
+    public double getTimeBefore(){ return timeBefore; }
+
+    public BiopluxCommunication getBiopluxCommunication(){ return biopluxCommunication; }
+
+
+    public void setRunning(boolean running){ this.running = running; }
+
+    public void setResuming(boolean resuming){ this.resuming = resuming; }
+
+    public void setIgnore(boolean ignore) { this.ignore = ignore; }
+
+    public void setInitialized(boolean initialized){ this.initialized = initialized; }
+
+    public void setState(String state){ this.state = state; }
+
+    public void setPreviousOrientation(int previousOrientation){ this.previousOrientation = previousOrientation; }
+
+    public void setSeries(int pos, LineGraphSeries<DataPoint> series){ seriesArr[pos] = series; }
+
+    public void setCurrentTime(String currentTime){ this.currentTime = currentTime; }
+
+    public void setPreviousTime(String previousTime){ this.previousTime = previousTime; }
+
+    public void setTime(double time){ this.time = time; }
+
+    public void setTimeBefore(double timeBefore){ this.timeBefore = timeBefore; }
+
+    // This method shouldn't be integrated in method ClearDatabase.
+    // Incoming messages not yet deleted mess up the times at this point.
+    protected void setbackTime(){
+        timeBefore = 0.;
+        time = 0.;
+    }
 }

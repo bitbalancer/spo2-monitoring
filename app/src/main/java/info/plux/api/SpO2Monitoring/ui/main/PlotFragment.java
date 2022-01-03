@@ -3,16 +3,19 @@ package info.plux.api.SpO2Monitoring.ui.main;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Html;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.jjoe64.graphview.DefaultLabelFormatter;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.Viewport;
+import com.jjoe64.graphview.series.LineGraphSeries;
 
 import info.plux.api.SpO2Monitoring.R;
 
@@ -20,12 +23,17 @@ import info.plux.api.SpO2Monitoring.R;
  * A placeholder fragment containing GraphView
  */
 public class PlotFragment extends Fragment {
+    private final String TAG = this.getClass().getSimpleName();
     private static final String ARG_SECTION_NUMBER = "section_number";
 
-    // for plotting
+    private static PlotFragment instance;
 
-    protected static GraphView graph;
-    protected static Viewport viewport;
+    // For plotting
+
+    // Must be static. Gets manipulated by loading process outside of this fragment before an instance is created.
+    // To guarantee independence of an instance attributes belong to class.
+    private static GraphView graph;
+    private static Viewport viewport;
 
     // time
     protected static final double MIN_X = 0;
@@ -48,6 +56,32 @@ public class PlotFragment extends Fragment {
     // Methods
     //**********************************************************************************************
 
+    /**
+     *  The series are added to the graph. The graph holds the series.
+     */
+    public static void addSeriesToGraph(LineGraphSeries[] seriesArr){
+        // Adds val_1 to scale
+        graph.addSeries(seriesArr[0]);
+
+        // Makes val_2 series red
+        seriesArr[1].setColor(Color.RED);
+
+        // Adds val_2 series to scale
+        graph.addSeries(seriesArr[1]);
+
+        // ALTERNATIVE: Adds val_2 series to second scale
+        // PlotFragment.graph.getSecondScale().addSeries(ColorViewModel.seriesArr[1]);
+
+
+        if(seriesArr[0].getHighestValueX()>PlotFragment.MAX_X){ // Do not scroll to end of series when whole series is still in visible area.
+            viewport.scrollToEnd(); // scroll to last data point of series
+        }
+    }
+
+    public static PlotFragment getInstance(){
+        return instance;
+    }
+
 
     public static PlotFragment newInstance(int index) {
 
@@ -56,6 +90,19 @@ public class PlotFragment extends Fragment {
         bundle.putInt(ARG_SECTION_NUMBER, index);
         fragment.setArguments(bundle);
         return fragment;
+
+    }
+
+    //**********************************************************************************************
+    // Lifecycle Callbacks
+    //**********************************************************************************************
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Log.d(TAG,"ON CREATE");
+
+        instance = this; // not used
 
     }
 
@@ -73,10 +120,16 @@ public class PlotFragment extends Fragment {
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
+
+        Log.d(TAG,"ON VIEW CREATED");
         View root = getView();
+
+        instance = this;
 
         graph = root.findViewById(R.id.graph);
         viewport = graph.getViewport();
+
+
 
         //------------------------------------------------------------------------------------------
         // Graph Customization

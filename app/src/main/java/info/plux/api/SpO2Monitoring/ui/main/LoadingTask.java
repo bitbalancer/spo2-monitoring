@@ -7,6 +7,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 
+import androidx.lifecycle.ViewModelProvider;
+
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -19,17 +21,17 @@ import info.plux.api.SpO2Monitoring.database.MeasureDB;
 
 public class LoadingTask extends AsyncTask<Void,Void,DataRow> {
     private final String TAG = this.getClass().getSimpleName();
-    private MeasureDB mDB;
+    private MeasureDB measureDB;
     private List<DataRow> dataRows;
     private DataRow row;
     private ColorFragment colorFragment;
-    private Context context;
+    private ColorViewModel colorViewModel;
 
 
     public LoadingTask(ColorFragment cf) {
-        context = cf.getContext();
-        this.mDB = MeasureDB.getInstance(context);
         this.colorFragment = cf;
+        this.measureDB = MeasureDB.getInstance(cf.getContext());
+        colorViewModel = new ViewModelProvider(cf).get(ColorViewModel.class);
     }
 
     @Override
@@ -37,21 +39,21 @@ public class LoadingTask extends AsyncTask<Void,Void,DataRow> {
 
         Log.i(TAG, "+++++++++++++++++++++++++++++++++++++" + " Loading started " + "+++++++++++++++++++++++++++++++++++++");
 
-        dataRows = mDB.dataRowDAO().getAllRows();
+        dataRows = measureDB.dataRowDAO().getAllRows();
 
         if (!dataRows.isEmpty()) {
             // If order of x values (time) is NOT ascending than clear corrupt database
             // Probably due to disconnect during usage
             try {
                 // Sets time to last values.
-                ColorViewModel.time = mDB.dataRowDAO().getLastRow().time;
-                ColorViewModel.timeBefore = ColorViewModel.time;
+                colorViewModel.setTime(measureDB.dataRowDAO().getLastRow().time);
+                colorViewModel.setTimeBefore(colorViewModel.getTime());
 
                 // Fills array with LineGraphSeries.
-                ColorViewModel.seriesArr[0] = convertValToSeries(dataRows, 1,true);
-                ColorViewModel.seriesArr[1] = convertValToSeries(dataRows, 2,false);
+                colorViewModel.setSeries(0, convertValToSeries(dataRows, 1,true));
+                colorViewModel.setSeries(1, convertValToSeries(dataRows, 2,false));
 
-                Log.i(TAG, "This is the last time in database: " + ColorViewModel.time + " +++++++++++++++++++++++++++++++++++++");
+                Log.i(TAG, "This is the last time in database: " + colorViewModel.getTime() + " +++++++++++++++++++++++++++++++++++++");
 
             } catch (IllegalArgumentException ex) {
                 Log.w(TAG, " Illegal Argument Exception: false order of x values. Database has been cleared.");
@@ -72,7 +74,7 @@ public class LoadingTask extends AsyncTask<Void,Void,DataRow> {
         Log.i(TAG, "+++++++++++++++++++++++++++++++++++++" + " Loading finished " + "+++++++++++++++++++++++++++++++++++++");
 
 
-        return mDB.dataRowDAO().getLastRow();
+        return measureDB.dataRowDAO().getLastRow();
     }
 
     @Override

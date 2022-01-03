@@ -7,6 +7,7 @@ import android.util.Log;
 
 import com.google.android.material.tabs.TabLayout;
 
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager.widget.ViewPager;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,9 +19,9 @@ import info.plux.pluxapi.bioplux.BiopluxException;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
-    protected static BluetoothDevice bluetoothDevice;
     public final static String EXTRA_DEVICE = "info.plux.pluxandroid.DeviceActivity.EXTRA_DEVICE";
     private TabLayout tabs;
+    private BluetoothDevice bluetoothDevice;
 
     //**********************************************************************************************
     // Lifecycle Callbacks
@@ -48,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
         // Save Bluetooth device in variable to make it available.
         bluetoothDevice = getIntent().getParcelableExtra(EXTRA_DEVICE);
 
-
     }
 
     //----------------------------------------------------------------------------------------------
@@ -68,13 +68,13 @@ public class MainActivity extends AppCompatActivity {
             case 0:
                 // Starts main activity and passes on chosen device to it.
                 Intent intent = new Intent( getApplicationContext(), ScanActivity.class);
+                ColorViewModel colorViewModel = new ViewModelProvider(ColorFragment.getInstance()).get(ColorViewModel.class);
                 try {
-                    ColorViewModel.bioplux.disconnect();
+                    colorViewModel.getBiopluxCommunication().disconnect();
                 } catch (BiopluxException e) {
                     e.printStackTrace();
                 }
-                ColorViewModel.comeback=true;
-                ColorViewModel.isInitialized = false;
+                colorViewModel.setInitialized(false);
                 startActivity(intent);
                 Log.v(TAG,"ON BACK PRESSED");
                 break;
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Make BluetoothDevice available in main fragments
      */
-    public static BluetoothDevice getBluetoothDevice() {
+    public BluetoothDevice getBluetoothDevice() {
         return bluetoothDevice;
     }
 
