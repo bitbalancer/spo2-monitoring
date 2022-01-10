@@ -1,5 +1,9 @@
 package info.plux.api.SpO2Monitoring.ui.main;
 
+import static info.plux.pluxapi.Constants.ACTION_STATE_CHANGED;
+import static info.plux.pluxapi.Constants.EXTRA_STATE_CHANGED;
+import static info.plux.pluxapi.Constants.IDENTIFIER;
+
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,9 +15,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,21 +27,18 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+
 import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
 import com.scottyab.HeartBeatView;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import info.plux.api.SpO2Monitoring.R;
 import info.plux.api.SpO2Monitoring.SingleLiveEvent.SingleLiveEvent;
-import info.plux.api.SpO2Monitoring.activities.MainActivity;
 import info.plux.api.SpO2Monitoring.database.DataRow;
 import info.plux.api.SpO2Monitoring.database.MeasureDB;
 import info.plux.api.SpO2Monitoring.thermometer.Thermometer;
@@ -47,10 +46,6 @@ import info.plux.api.SpO2Monitoring.thermometer.ThermometerHorizontal;
 import info.plux.pluxapi.Constants;
 import info.plux.pluxapi.bioplux.BiopluxException;
 import info.plux.pluxapi.bioplux.utils.Source;
-
-import static info.plux.pluxapi.Constants.ACTION_STATE_CHANGED;
-import static info.plux.pluxapi.Constants.EXTRA_STATE_CHANGED;
-import static info.plux.pluxapi.Constants.IDENTIFIER;
 
 // Hint: All Methods here have direct or indirect effects on UI.
 
