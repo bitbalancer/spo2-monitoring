@@ -2,6 +2,7 @@ package info.plux.api.SpO2Monitoring.activities;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
         ViewPager viewPager = findViewById(R.id.view_pager);
         viewPager.setAdapter(sectionsPagerAdapter);
         tabs = findViewById(R.id.tabs);
+        tabs.setBackgroundColor(getResources().getColor(R.color.SteelBlue));
         tabs.setupWithViewPager(viewPager);
 
     }

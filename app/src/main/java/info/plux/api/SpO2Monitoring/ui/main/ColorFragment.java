@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,6 +22,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -62,16 +64,9 @@ public class ColorFragment extends Fragment {
 
     public static final long DELAY = 1000;
     // Suggestion: Do not save ui states in prefs but in savedInstanceState
-    // State of running could be passed additionally instead of overly complex recording system
+
     // protected static SharedPreferences prefs;
     // protected static SharedPreferences.Editor editor;
-
-
-    /* When database reaches a certain size and hence the loading process takes some time,
-     * the observer is likely to register a change to database supposedly due to select queries in the loading process!
-     * This starts the heart beating undesired. Hence we use SingleLiveEvent to prevent this side effect.
-     */
-    protected static SingleLiveEvent<DataRow> isLoaded = new SingleLiveEvent<>();
 
     private static final int BPM_LIMIT = 40;
     // Adjust maximally expected value for your quantity
@@ -83,9 +78,8 @@ public class ColorFragment extends Fragment {
     private static final String STATE_KEY = "state";
 
 
-    protected static final int FREQUENCY = 20; // up to 1000 Hz possible but not recommendable due to substantial delay
+    protected static final int FREQUENCY = 40; // up to 1000 Hz possible but not recommendable due to substantial delay
     private int maxDataPoints = (int) Math.ceil(PlotFragment.MAX_X) * FREQUENCY; // Number of data points maximally hold in a series (GraphView)
-
 
     // Setup of Ports of Biosignalsplux hub
     // Ports ranges from 0 to 9. The bitmask designates the channels of the sensor.
@@ -107,6 +101,10 @@ public class ColorFragment extends Fragment {
     private ConstraintLayout colorFragmentLayout;
     // buttons
     private Button btStart, btPause, btClear;
+    // mediaplayer
+    private MediaPlayer alarmMP;
+    // toast
+    private Toast warningToast;
     // for connection state report
     private TextView stateView;
     // More TextViews to display data
@@ -235,6 +233,12 @@ public class ColorFragment extends Fragment {
 
         colorViewModel.getClickable().observe(getViewLifecycleOwner(), clickableObserver);
 
+        //------------------------------------------------------------------------------------------
+
+        alarmMP = MediaPlayer.create(getActivity(), R.raw.short_alarm);
+
+        warningToast = Toast.makeText(getContext(), getText(R.string.warning),Toast.LENGTH_LONG);
+
         return root;
     }
 
@@ -260,7 +264,10 @@ public class ColorFragment extends Fragment {
         btStart = root.findViewById(R.id.bt_start);
         btPause = root.findViewById(R.id.bt_pause);
         btClear = root.findViewById(R.id.bt_clear);
-        //Buttons.disable();
+        int btColor = getResources().getColor(R.color.SteelBlue);
+        btStart.setBackgroundColor(btColor);
+        btPause.setBackgroundColor(btColor);
+        btClear.setBackgroundColor(btColor);
 
         // time display
         timeView = root.findViewById(R.id.text_time);
@@ -886,6 +893,16 @@ public class ColorFragment extends Fragment {
             // In this for case Sp02 Sensor (Biosignalsplux)
             if (x < 80) {
                 colorLevelView.setText(R.string.VL);
+                // Plays alarm signal as long as x is lower than specified.
+
+                if(colorViewModel.getRunning()) {
+                    if (!alarmMP.isPlaying()) {
+                        alarmMP.start();
+                    }
+
+                    warningToast.show();
+
+                }
             } else if (x < 85) {
                 colorLevelView.setText(R.string.LO);
             } else if (x < 90) {
@@ -948,14 +965,11 @@ public class ColorFragment extends Fragment {
         if(colorViewModel.getPreviousOrientation() != Configuration.ORIENTATION_UNDEFINED // starting undefined
                 && colorViewModel.getPreviousOrientation() != currentOrientation) {
 
-            //ColorViewModel.rotating = true;
-            //colorViewModel.changeContinuant(0,true);
             Log.v(TAG, "Rotating");
             rotating = true;
 
         } else{
-            //ColorViewModel.rotating = false;
-            //colorViewModel.changeContinuant(0,false);
+
             Log.v(TAG, "Not rotating (task switch / home etc)");
             rotating = false;
         }
@@ -994,12 +1008,6 @@ public class ColorFragment extends Fragment {
             } else {
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
             }
-
-
-            // Records orientation before orientation will become unlocked again.
-            //ColorViewModel.previousOrientation=currentOrientation;
-            //toBeSaved = false;
-
 
         } else {
             activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
