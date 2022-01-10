@@ -154,7 +154,7 @@ public class ThermometerHorizontal extends View {
         outerRect.bottom = circleCenterY+outerRectRadius;
 
         canvas.drawRoundRect(outerRect, outerRectRadius, outerRectRadius, outerPaint);
-        canvas.drawCircle(circleCenterX, circleCenterY, outerCircleRadius, outerPaint);
+       // canvas.drawCircle(circleCenterX, circleCenterY, outerCircleRadius, outerPaint);
 
         /*
         Paint myPaint = new Paint();
@@ -182,7 +182,7 @@ public class ThermometerHorizontal extends View {
         middleRect.bottom = circleCenterY+middleRectRadius;
 
         canvas.drawRoundRect(middleRect, middleRectRadius, middleRectRadius, middlePaint);
-        canvas.drawCircle(circleCenterX, circleCenterY, middleCircleRadius, middlePaint);
+        //canvas.drawCircle(circleCenterX, circleCenterY, middleCircleRadius, middlePaint);
 
         RectF innerRect = new RectF();
         innerRect.left = circleCenterX;
@@ -191,7 +191,7 @@ public class ThermometerHorizontal extends View {
         innerRect.bottom = circleCenterY + innerRectRadius;
 
         canvas.drawRect(innerRect, innerPaint);
-        canvas.drawCircle(circleCenterX, circleCenterY, innerCircleRadius, innerPaint);
+       // canvas.drawCircle(circleCenterX, circleCenterY, innerCircleRadius, innerPaint);
 
         float tmp = innerEffectStartX;
         float startGraduation = minTemp;
