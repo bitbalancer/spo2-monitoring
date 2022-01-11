@@ -38,6 +38,7 @@ public class ThermometerHorizontal extends View {
     private float currentTemp = MIN_TEMP;
     private Rect rect = new Rect();
 
+
     public ThermometerHorizontal(Context context) {
         super(context);
         init(context, null);
@@ -153,8 +154,14 @@ public class ThermometerHorizontal extends View {
         outerRect.right = outerEndX;
         outerRect.bottom = circleCenterY+outerRectRadius;
 
-        canvas.drawRoundRect(outerRect, outerRectRadius, outerRectRadius, outerPaint);
+        //original
+       // canvas.drawRoundRect(outerRect, outerRectRadius, outerRectRadius, outerPaint);
+        //test
+        canvas.drawRect(outerRect, outerPaint);
+
        // canvas.drawCircle(circleCenterX, circleCenterY, outerCircleRadius, outerPaint);
+
+
 
         /*
         Paint myPaint = new Paint();
@@ -181,7 +188,10 @@ public class ThermometerHorizontal extends View {
         middleRect.right = middleEndX;
         middleRect.bottom = circleCenterY+middleRectRadius;
 
-        canvas.drawRoundRect(middleRect, middleRectRadius, middleRectRadius, middlePaint);
+        //canvas.drawRoundRect(middleRect, middleRectRadius, middleRectRadius, middlePaint);
+        //test
+        canvas.drawRect(middleRect, middlePaint);
+        //original
         //canvas.drawCircle(circleCenterX, circleCenterY, middleCircleRadius, middlePaint);
 
         RectF innerRect = new RectF();

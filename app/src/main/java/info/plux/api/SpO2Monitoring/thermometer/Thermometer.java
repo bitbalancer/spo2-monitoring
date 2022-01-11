@@ -151,7 +151,11 @@ public class Thermometer extends View {
         outerRect.right = circleCenterX + outerRectRadius;
         outerRect.bottom = circleCenterY;
 
-        canvas.drawRoundRect(outerRect, outerRectRadius, outerRectRadius, outerPaint);
+        //Test
+        canvas.drawRect(outerRect, outerPaint);
+      //  canvas.drawRoundRect(outerRect, outerRectRadius, outerRectRadius, outerPaint);
+
+
         //canvas.drawCircle(circleCenterX, circleCenterY, outerCircleRadius, outerPaint);
 
         RectF middleRect = new RectF();
@@ -160,7 +164,9 @@ public class Thermometer extends View {
         middleRect.right = circleCenterX + middleRectRadius;
         middleRect.bottom = circleCenterY;
 
-        canvas.drawRoundRect(middleRect, middleRectRadius, middleRectRadius, middlePaint);
+
+       // canvas.drawRoundRect(middleRect, middleRectRadius, middleRectRadius, middlePaint);
+        canvas.drawRect(middleRect, middlePaint);
         //canvas.drawCircle(circleCenterX, circleCenterY, middleCircleRadius, middlePaint);
 
         canvas.drawRect(circleCenterX - innerRectRadius, innerStartY, circleCenterX + innerRectRadius, circleCenterY, innerPaint);
