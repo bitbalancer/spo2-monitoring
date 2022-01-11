@@ -15,6 +15,7 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- my colors -->
+    <color name="SteelBlue">#CADEFC</color>
     <color name="White">#FFFFFFFF</color>
     <color name="Silver">#FFC0C0C0</color>
     <color name="Gray">#FF808080</color>
@@ -42,7 +43,7 @@
     <color name="High">#FFB533</color>
     <color name="VeryHigh">#FFA200</color>
 
-
+    <!-- scale -->
     <color name="outerColor">#FF0000FF</color>
     <color name="middleColor">#FF00FFFF</color>
     <color name="innerColor">#FFFF0000</color>

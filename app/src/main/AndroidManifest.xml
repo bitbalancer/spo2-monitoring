@@ -14,36 +14,24 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/logo_round"
         android:supportsRtl="true"
-        > <!-- @style/Theme.TabbedActivity --> <!-- android:theme="@style/AppTheme"-->
-
-        <!-- @android:style/Theme.Holo.Light -->
-        <service
-            android:name="info.plux.api.SpO2Monitoring.old.read_from_db.ReadService"
-            android:enabled="true"
-            android:exported="true" />
+        android:theme="@style/Theme.AppCompat.Light" >
+        <!-- Remember: Theme applied to all activities. Theme.AppCompat must be used because it is required by AppCompatActivity class.
+        The app's activities are children of AppCompatActivity. Set attributes like background color programmatically. -->
 
         <activity
             android:name="info.plux.api.SpO2Monitoring.activities.ScanActivity"
             android:label="@string/title_activity_scan"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light" > <!-- android:theme="@style/AppTheme" -->
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="info.plux.api.SpO2Monitoring.old.DeviceActivity"
-            /> <!-- android:theme="@style/Theme.AppCompat.Light"-->
-        <activity
-            android:name="info.plux.api.SpO2Monitoring.old.PlotterActivity"
-           /> <!-- android:theme="@style/Theme.AppCompat.Light"-->
 
         <activity
             android:name="info.plux.api.SpO2Monitoring.activities.MainActivity"
-            android:label="@string/title_activity_main"
-            android:theme="@style/Theme.AppCompat.Light"/> <!-- android:theme="@style/Theme.AppCompat.Light.NoActionBar" -->
+            android:label="@string/title_activity_main" />
         <!-- android:configChanges="orientation|screenSize" -->
         <!-- automatic adjustment to landscape -->
     </application>

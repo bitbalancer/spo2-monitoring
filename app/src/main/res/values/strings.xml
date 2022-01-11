@@ -34,5 +34,8 @@
     <string name="HI">HIGH</string>
     <string name="VH">VERY HIGH</string>
 
+    <!-- Toast -->
+    <string name="warning">Breath my dear! Time to take a break.</string>
+
 
 </resources>
