@@ -40,11 +40,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import info.plux.api.SpO2Monitoring.R;
-import info.plux.api.SpO2Monitoring.SingleLiveEvent.SingleLiveEvent;
 import info.plux.api.SpO2Monitoring.database.DataRow;
 import info.plux.api.SpO2Monitoring.database.MeasureDB;
-import info.plux.api.SpO2Monitoring.thermometer.Thermometer;
-import info.plux.api.SpO2Monitoring.thermometer.ThermometerHorizontal;
+import info.plux.api.SpO2Monitoring.scale.Scale;
+import info.plux.api.SpO2Monitoring.scale.ScaleLand;
 import info.plux.pluxapi.Constants;
 import info.plux.pluxapi.bioplux.BiopluxException;
 import info.plux.pluxapi.bioplux.utils.Source;
@@ -89,9 +88,9 @@ public class ColorFragment extends Fragment {
     // ui elements
     // for heart
     private HeartBeatView heartbeat2View;
-    // for thermometer
-    private Thermometer thermometer;
-    private ThermometerHorizontal thermometerHorizontal;
+    // for scale
+    private Scale scale;
+    private ScaleLand scaleLand;
     // for changing background color
     private ConstraintLayout colorFragmentLayout;
     // buttons
@@ -226,6 +225,7 @@ public class ColorFragment extends Fragment {
             }
         };
 
+
         colorViewModel.getClickable().observe(getViewLifecycleOwner(), clickableObserver);
 
         //------------------------------------------------------------------------------------------
@@ -252,8 +252,8 @@ public class ColorFragment extends Fragment {
         // traffic lights
         colorFragmentLayout = root.findViewById(R.id.fragment_color);
         colorLevelView = root.findViewById(R.id.text_color_level);
-        thermometer = root.findViewById(R.id.thermometer);
-        thermometerHorizontal = root.findViewById(R.id.thermometer_horizontal);
+        scale = root.findViewById(R.id.scale);
+        scaleLand = root.findViewById(R.id.scale_land);
 
         // buttons
         btStart = root.findViewById(R.id.bt_start);
@@ -291,9 +291,9 @@ public class ColorFragment extends Fragment {
                 stateView.setText(savedInstanceState.getString(STATE_KEY));
 
                 if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                    thermometer.setCurrentTemp(val1);
+                    scale.setCurrentLevel(val1);
                 } else {
-                    thermometerHorizontal.setCurrentTemp(val1);
+                    scaleLand.setCurrentLevel(val1);
                 }
 
                 Log.v(TAG, "SavedInstanceState used!");
@@ -520,9 +520,9 @@ public class ColorFragment extends Fragment {
                     // The current orientation determines which kind of temperature scale is used for depicting val_1.
                     // The scales are adapted to their orientation.
                     if(currentOrientation==Configuration.ORIENTATION_PORTRAIT){
-                        thermometer.setCurrentTemp(val_1);
+                        scale.setCurrentLevel(val_1);
                     } else {
-                        thermometerHorizontal.setCurrentTemp(val_1);
+                        scaleLand.setCurrentLevel(val_1);
                     }
                     setColorAccordingToLevelOf(val_1); // Determines background color of UI according to val_1 intensity
 
@@ -705,9 +705,9 @@ public class ColorFragment extends Fragment {
             }
 
             if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                thermometer.setCurrentTemp(val_1);
+                scale.setCurrentLevel(val_1);
             } else {
-                thermometerHorizontal.setCurrentTemp(val_1);
+                scaleLand.setCurrentLevel(val_1);
             }
             Log.v(TAG, "dataRow not null!");
         }

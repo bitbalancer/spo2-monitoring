@@ -8,27 +8,23 @@
     tools:context=".ui.main.ColorFragment">
 
 
-    <info.plux.api.SpO2Monitoring.thermometer.Thermometer
-        android:id="@+id/thermometer"
-        android:layout_width="286dp"
-        android:layout_height="514dp"
+    <info.plux.api.SpO2Monitoring.scale.Scale
+        android:id="@+id/scale"
+        android:layout_width="295dp"
+        android:layout_height="448dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginTop="-14dp"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        android:layout_marginBottom="-4dp"
+        app:dimension="60dp"
         app:innerColor="@color/innerColor"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/text_loading"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintHorizontal_bias="0.496"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.867"
+        app:layout_constraintVertical_bias="0.495"
         app:middleColor="@color/middleColor"
-        app:outerColor="@color/outerColor"
-        app:radius="60dp" />
+        app:outerColor="@color/outerColor" />
 
     <TextView
         android:id="@+id/text_color_level"
@@ -153,10 +149,10 @@
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.555"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.808" />
+        app:layout_constraintVertical_bias="1.0" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

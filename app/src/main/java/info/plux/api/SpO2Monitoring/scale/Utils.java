@@ -1,4 +1,4 @@
-package info.plux.api.SpO2Monitoring.thermometer;
+package info.plux.api.SpO2Monitoring.scale;
 
 import android.content.Context;
 import android.content.res.Resources;

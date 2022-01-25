@@ -157,7 +157,7 @@ public class ScanActivity extends AppCompatActivity {
         // Scans for devices already when activity is started.
         scan.performClick();
         // Asks for permissions.
-        permissionCheck();
+        //permissionCheck();
 
     }
 
@@ -188,7 +188,7 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     //**********************************************************************************************
-    // Other Methods
+    // Other Methods & Attributes
     //**********************************************************************************************
 
     @Override
