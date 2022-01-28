@@ -1,9 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    // added by me
     compileSdkVersion 31
-    //compileSdkVersion 27
     buildToolsVersion "29.0.2"
     defaultConfig {
         configurations.all{

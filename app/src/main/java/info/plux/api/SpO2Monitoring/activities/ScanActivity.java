@@ -157,7 +157,7 @@ public class ScanActivity extends AppCompatActivity {
         // Scans for devices already when activity is started.
         scan.performClick();
         // Asks for permissions.
-        //permissionCheck();
+        permissionCheck();
 
     }
 
