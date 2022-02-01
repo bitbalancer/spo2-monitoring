@@ -2,13 +2,17 @@ package info.plux.api.SpO2Monitoring.activities;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
-import android.media.MediaPlayer;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import com.google.android.material.tabs.TabLayout;
 
 import androidx.lifecycle.ViewModelProvider;
+import androidx.preference.PreferenceManager;
 import androidx.viewpager.widget.ViewPager;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     public final static String EXTRA_DEVICE = "info.plux.pluxandroid.DeviceActivity.EXTRA_DEVICE";
     private TabLayout tabs;
     private BluetoothDevice bluetoothDevice;
-
+    //TextView visibletxt;
     //**********************************************************************************************
     // Lifecycle Callbacks
     //**********************************************************************************************
@@ -40,19 +44,32 @@ public class MainActivity extends AppCompatActivity {
         tabs.setBackgroundColor(getResources().getColor(R.color.SteelBlue));
         tabs.setupWithViewPager(viewPager);
 
+    setupSharedPreferences();
     }
 
-    //----------------------------------------------------------------------------------------------
 
+
+    private void setupSharedPreferences() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this::onSharedPreferenceChanged);
+    }
+
+    private String loadLimitFromPreference(SharedPreferences sharedPreferences) {
+        String limit = sharedPreferences.getString(getString(R.string.pref_limit), String.valueOf(R.string.pref_limit_default));
+        return limit;
+    }
+    private String loadInstrFromPreference(SharedPreferences sharedPreferences) {
+        String instruction = sharedPreferences.getString(getString(R.string.pref_instruction), String.valueOf(R.string.pref_instr_default));
+        return instruction;
+    }
+     //----------------------------------------------------------------------------------------------
     @Override
     public void onResume() {
         super.onResume();
 
         // Save Bluetooth device in variable to make it available.
         bluetoothDevice = getIntent().getParcelableExtra(EXTRA_DEVICE);
-
     }
-
     //----------------------------------------------------------------------------------------------
 
     @Override
@@ -87,6 +104,11 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        android.preference.PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this::onSharedPreferenceChanged);
+    }
 
     //----------------------------------------------------------------------------------------------
 
@@ -95,6 +117,41 @@ public class MainActivity extends AppCompatActivity {
      */
     public BluetoothDevice getBluetoothDevice() {
         return bluetoothDevice;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.settings_menu, menu);
+        return true;
+    }
+
+
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+
+        if (key.equals("pref_limit")) {
+          loadLimitFromPreference(sharedPreferences);
+        }
+        else if (key.equals(R.string.pref_instruction)){
+            loadInstrFromPreference(sharedPreferences);
+        }
+    }
+
+    @Override
+    // Open new Activity2 depending on which Item of Menu was selected
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.preference_item) {
+            Intent intent = new Intent(MainActivity.this, PreferencesActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        else if (id == R.id.profile_item){
+            Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+       <EditTextPreference
+           android:defaultValue="@string/pref_limit_default"
+           android:key="@string/pref_limit"
+           android:title="@string/limit"/>
+
+    <EditTextPreference
+        android:defaultValue="@string/pref_instr_default"
+        android:key="@string/pref_instruction"
+        android:title="@string/instruction"/>
+
+</PreferenceScreen>

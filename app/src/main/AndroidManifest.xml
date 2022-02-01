@@ -35,9 +35,25 @@
 
         <activity
             android:name="info.plux.api.SpO2Monitoring.activities.MainActivity"
-            android:label="@string/title_activity_main" />
+            android:label="@string/title_activity_main"
+            android:launchMode="singleTask"
+            />
+        <!-- When pressing back arrow in Profile or Preferences Settings, go right back to color fragment-->
+
         <!-- android:configChanges="orientation|screenSize" -->
         <!-- automatic adjustment to landscape -->
+        <activity
+            android:name=".activities.PreferencesActivity"
+            android:label="@string/action_preferences"
+            android:parentActivityName=".activities.MainActivity">
+
+        </activity>
+        <activity
+            android:name=".activities.ProfileActivity"
+            android:label="@string/action_profile"
+            android:parentActivityName=".activities.MainActivity">
+
+        </activity>
     </application>
 
 </manifest>

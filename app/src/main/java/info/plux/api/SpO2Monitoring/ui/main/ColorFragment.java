@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -53,14 +54,11 @@ import info.plux.pluxapi.bioplux.utils.Source;
 /**
  * A placeholder fragment containing 6 views and 3 buttons
  */
-public class ColorFragment extends Fragment {
+public class ColorFragment extends Fragment implements SharedPreferences.OnSharedPreferenceChangeListener{
     private final String TAG = this.getClass().getSimpleName();
 
     public static final long DELAY = 1000;
     // Suggestion: Do not save ui states in prefs but in savedInstanceState
-
-    // protected static SharedPreferences prefs;
-    // protected static SharedPreferences.Editor editor;
 
     private static final int BPM_LIMIT = 40;
     // Adjust maximally expected value for your quantity
@@ -70,6 +68,7 @@ public class ColorFragment extends Fragment {
     private static final float VAL_1_DEFAULT = -1f;
     private static final String VAL_3_KEY = "heart_rate";
     private static final String STATE_KEY = "state";
+
 
 
     protected static final int FREQUENCY = 40; // up to 1000 Hz possible but not recommendable due to substantial delay
@@ -115,6 +114,13 @@ public class ColorFragment extends Fragment {
 
     private static final String ARG_SECTION_NUMBER = "section_number";
 
+
+
+    //Setting preferences
+   /* SharedPreferences sharedPreferences = PreferencesFragment.;
+
+    private int limit = sharedPreferences.getInt(getString(R.string.pref_limit), R.string.pref_limit_default);
+*/
     // How to get instance of PlotFragment
 
     //FragmentManager fm = getFragmentManager();
@@ -142,6 +148,7 @@ public class ColorFragment extends Fragment {
         // will be used in LoadingTask
 
         currentOrientation = getResources().getConfiguration().orientation;
+
 
     }
 
@@ -232,7 +239,7 @@ public class ColorFragment extends Fragment {
 
         alarmMP = MediaPlayer.create(getActivity(), R.raw.short_alarm);
 
-        warningToast = Toast.makeText(getContext(), getText(R.string.warning),Toast.LENGTH_LONG);
+        warningToast = Toast.makeText(getContext(), R.string.warning ,Toast.LENGTH_LONG);
 
         return root;
     }
@@ -475,6 +482,11 @@ public class ColorFragment extends Fragment {
 
         // Do not use it!
         // handlerThread.quit();
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+
     }
 
     //**********************************************************************************************
@@ -868,9 +880,7 @@ public class ColorFragment extends Fragment {
         int color;
 
         if( x < 0){
-
             color = getResources().getColor(R.color.White);
-
             colorLevelView.setText(R.string.start);
 
         } else {
@@ -886,6 +896,8 @@ public class ColorFragment extends Fragment {
 
             // Adjust thresholds for your particular quantity.
             // In this for case Sp02 Sensor (Biosignalsplux)
+
+            //ADD LIMIT HERE
             if (x < 80) {
                 colorLevelView.setText(R.string.VL);
                 // Plays alarm signal as long as x is lower than specified.
@@ -894,7 +906,6 @@ public class ColorFragment extends Fragment {
                     if (!alarmMP.isPlaying()) {
                         alarmMP.start();
                     }
-
                     warningToast.show();
 
                 }
