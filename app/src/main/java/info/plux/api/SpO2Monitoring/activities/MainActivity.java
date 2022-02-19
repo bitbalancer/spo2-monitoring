@@ -44,24 +44,9 @@ public class MainActivity extends AppCompatActivity {
         tabs.setBackgroundColor(getResources().getColor(R.color.SteelBlue));
         tabs.setupWithViewPager(viewPager);
 
-    setupSharedPreferences();
     }
 
 
-
-    private void setupSharedPreferences() {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this::onSharedPreferenceChanged);
-    }
-
-    private String loadLimitFromPreference(SharedPreferences sharedPreferences) {
-        String limit = sharedPreferences.getString(getString(R.string.pref_limit), String.valueOf(R.string.pref_limit_default));
-        return limit;
-    }
-    private String loadInstrFromPreference(SharedPreferences sharedPreferences) {
-        String instruction = sharedPreferences.getString(getString(R.string.pref_instruction), String.valueOf(R.string.pref_instr_default));
-        return instruction;
-    }
      //----------------------------------------------------------------------------------------------
     @Override
     public void onResume() {
@@ -107,8 +92,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        android.preference.PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this::onSharedPreferenceChanged);
-    }
+     }
 
     //----------------------------------------------------------------------------------------------
 
@@ -127,16 +111,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-
-        if (key.equals("pref_limit")) {
-          loadLimitFromPreference(sharedPreferences);
-        }
-        else if (key.equals(R.string.pref_instruction)){
-            loadInstrFromPreference(sharedPreferences);
-        }
-    }
-
     @Override
     // Open new Activity2 depending on which Item of Menu was selected
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -153,6 +127,10 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+
+
+
 
 
 }

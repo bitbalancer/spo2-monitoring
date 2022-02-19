@@ -14,6 +14,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.media.MediaPlayer;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -32,6 +33,8 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceManager;
 
 
 import com.jjoe64.graphview.series.DataPoint;
@@ -41,8 +44,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import info.plux.api.SpO2Monitoring.R;
+import info.plux.api.SpO2Monitoring.activities.MainActivity;
 import info.plux.api.SpO2Monitoring.database.DataRow;
 import info.plux.api.SpO2Monitoring.database.MeasureDB;
+import info.plux.api.SpO2Monitoring.fragments.PreferencesFragment;
 import info.plux.api.SpO2Monitoring.scale.Scale;
 import info.plux.api.SpO2Monitoring.scale.ScaleLand;
 import info.plux.pluxapi.Constants;
@@ -54,7 +59,7 @@ import info.plux.pluxapi.bioplux.utils.Source;
 /**
  * A placeholder fragment containing 6 views and 3 buttons
  */
-public class ColorFragment extends Fragment implements SharedPreferences.OnSharedPreferenceChangeListener{
+public class ColorFragment extends Fragment {
     private final String TAG = this.getClass().getSimpleName();
 
     public static final long DELAY = 1000;
@@ -114,19 +119,16 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
 
     private static final String ARG_SECTION_NUMBER = "section_number";
 
+    // Limit for setColorAccordingToLevel
+    private int limit;
 
-
-    //Setting preferences
-   /* SharedPreferences sharedPreferences = PreferencesFragment.;
-
-    private int limit = sharedPreferences.getInt(getString(R.string.pref_limit), R.string.pref_limit_default);
-*/
     // How to get instance of PlotFragment
 
     //FragmentManager fm = getFragmentManager();
     //plotFragment = (PlotFragment)fm.findFragmentById(R.id.plot_fragment);
 
     //plotFragment =(PlotFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.plot_fragment);
+
 
     public static ColorFragment getInstance(){
         return colorFragment;
@@ -138,6 +140,7 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
     //**********************************************************************************************
 
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -146,9 +149,7 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
 
         colorFragment = this;  // used in clearDatabase() for clear button
         // will be used in LoadingTask
-
         currentOrientation = getResources().getConfiguration().orientation;
-
 
     }
 
@@ -239,7 +240,6 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
 
         alarmMP = MediaPlayer.create(getActivity(), R.raw.short_alarm);
 
-        warningToast = Toast.makeText(getContext(), R.string.warning ,Toast.LENGTH_LONG);
 
         return root;
     }
@@ -439,6 +439,23 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
             Log.i(TAG,"Recording not running or stopped");
         }
 
+        // Update instruction String when changed(?)
+        String instruction = PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_instruction), getString(R.string.pref_instr_default));
+        warningToast = Toast.makeText(getContext(), instruction,Toast.LENGTH_LONG);
+        SharedPreferences userPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+
+        // Update limit
+       String sLimit = userPreferences.getString("limit", "80");
+        limit = Integer.parseInt(sLimit);
+
+
+
+
+
+       /* Log.d(TAG, (Integer.toString(limit) + " This is the limit"));
+        Log.d(TAG, String.valueOf(instruction + " This is the limit"));
+*/
+
     }
 
     //----------------------------------------------------------------------------------------------
@@ -483,12 +500,6 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
         // Do not use it!
         // handlerThread.quit();
     }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-
-    }
-
     //**********************************************************************************************
     // Class
     //**********************************************************************************************
@@ -877,7 +888,8 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
      * @param x relative strength in %
      */
     private void setColorAccordingToLevelOf(double x) {
-        int color;
+         int color;
+        // int limit = PreferenceManager.getDefaultSharedPreferences(getActivity()).getInt(getString(R.string.pref_limit), R.string.pref_limit_default);
 
         if( x < 0){
             color = getResources().getColor(R.color.White);
@@ -897,8 +909,7 @@ public class ColorFragment extends Fragment implements SharedPreferences.OnShare
             // Adjust thresholds for your particular quantity.
             // In this for case Sp02 Sensor (Biosignalsplux)
 
-            //ADD LIMIT HERE
-            if (x < 80) {
+            if (x < limit) {
                 colorLevelView.setText(R.string.VL);
                 // Plays alarm signal as long as x is lower than specified.
 
