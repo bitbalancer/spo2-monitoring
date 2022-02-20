@@ -1,8 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fragment
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/activity_profile"
-    android:name="info.plux.api.SpO2Monitoring.fragments.ProfileFragment"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    />
+    tools:context=".activities.ProfileActivity">
+
+
+  <!--  <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="17dp"
+        android:text="Erfolgreich eingeloggt"
+        android:textColor="#070606"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/textView6"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="48dp"
+        android:layout_marginBottom="16dp"
+        android:text="Ausloggen"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" /> -->
+
+  <TextView
+      android:id="@+id/textView6"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="4dp"
+      android:layout_marginBottom="699dp"
+      android:fontFamily="sans-serif-black"
+      android:text="Persönliche Informationen"
+      android:textSize="24sp"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintStart_toStartOf="parent" />
+
+  <TextView
+      android:id="@+id/textView8"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="26dp"
+      android:text="Name"
+      android:textSize="18sp"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView6" />
+
+  <EditText
+      android:id="@+id/edName"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginEnd="49dp"
+      android:layout_marginBottom="10dp"
+      android:ems="10"
+      android:inputType="textPersonName"
+      app:layout_constraintBottom_toTopOf="@+id/edVorname"
+      app:layout_constraintEnd_toEndOf="parent" />
+
+  <TextView
+      android:id="@+id/textView9"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="30dp"
+      android:text="Vorname"
+      android:textSize="18sp"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView8" />
+
+  <EditText
+      android:id="@+id/edVorname"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginBottom="8dp"
+      android:ems="10"
+      android:inputType="textPersonName"
+      app:layout_constraintBottom_toTopOf="@+id/edDate"
+      app:layout_constraintStart_toStartOf="@+id/edName" />
+
+  <TextView
+      android:id="@+id/textView10"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="29dp"
+      android:text="Geburtsdatum"
+      android:textSize="18sp"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView9" />
+
+  <EditText
+      android:id="@+id/edDate"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:ems="10"
+      android:inputType="date|datetime|text"
+      app:layout_constraintBottom_toBottomOf="@+id/textView10"
+      app:layout_constraintStart_toStartOf="@+id/edVorname"
+      app:layout_constraintTop_toBottomOf="@+id/textView10" />
+
+  <TextView
+      android:id="@+id/textView11"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="27dp"
+      android:text="Adresse"
+      android:textSize="18sp"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView10" />
+
+  <TextView
+      android:id="@+id/textView12"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="30dp"
+      android:text="TelNr"
+      android:textSize="18sp"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView11" />
+
+  <EditText
+      android:id="@+id/edNumb"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="1dp"
+      android:layout_marginTop="9dp"
+      android:ems="10"
+      android:inputType="phone"
+      app:layout_constraintStart_toStartOf="@+id/edAdres"
+      app:layout_constraintTop_toBottomOf="@+id/edAdres" />
+
+  <TextView
+      android:id="@+id/textView13"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="28dp"
+      android:text="SVN Nr"
+      android:textSize="18sp"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView12" />
+
+  <EditText
+      android:id="@+id/edSVN"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="7dp"
+      android:ems="10"
+      android:inputType="number"
+      app:layout_constraintStart_toStartOf="@+id/edNumb"
+      app:layout_constraintTop_toBottomOf="@+id/edNumb" />
+
+  <TextView
+      android:id="@+id/textView14"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="33dp"
+      android:layout_marginEnd="55dp"
+      android:text="Blutgruppe"
+      android:textSize="18sp"
+      app:layout_constraintEnd_toStartOf="@+id/spinner"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView13" />
+
+  <TextView
+      android:id="@+id/textView15"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="12dp"
+      android:layout_marginTop="34dp"
+      android:layout_marginEnd="74dp"
+      android:text="Allergien"
+      android:textSize="18sp"
+      app:layout_constraintEnd_toStartOf="@+id/allerList"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@+id/textView14" />
+
+  <Button
+      android:id="@+id/btnSave"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="34dp"
+      android:layout_marginBottom="16dp"
+      android:text="Speichern"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintStart_toStartOf="parent" />
+
+  <EditText
+      android:id="@+id/edAdres"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
+      android:layout_marginEnd="1dp"
+      android:ems="10"
+      android:inputType="textPostalAddress"
+      app:layout_constraintEnd_toEndOf="@+id/edDate"
+      app:layout_constraintTop_toBottomOf="@+id/edDate" />
+
+  <Spinner
+      android:id="@+id/spinner"
+      android:layout_width="0dp"
+      android:layout_height="47dp"
+      android:layout_marginTop="163dp"
+      android:layout_marginEnd="50dp"
+      android:layout_marginBottom="163dp"
+      app:layout_constraintBottom_toBottomOf="@+id/allerList"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toEndOf="@+id/textView14"
+      app:layout_constraintTop_toTopOf="@+id/edAdres" />
+
+  <ListView
+      android:id="@+id/allerList"
+      android:layout_width="0dp"
+      android:layout_height="150dp"
+      android:layout_marginTop="72dp"
+      android:layout_marginEnd="50dp"
+      android:layout_marginBottom="74dp"
+
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toEndOf="@+id/textView15"
+      app:layout_constraintTop_toBottomOf="@+id/edSVN" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

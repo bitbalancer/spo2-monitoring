@@ -50,5 +50,19 @@
     <!-- Toast -->
     <string name="warning">Breathe my dear! Time to take a break.</string>
 
+    <!-- Blutgruppen-->
+    <string-array name="Blutgruppe">
+        <item>Blutgruppe A</item>
+        <item>Blutgruppe B</item>
+        <item>Blutgruppe 0</item>
+        <item>Blutgruppe AB</item>
+    </string-array>
+
+    <!--Allergie-->
+    <string-array name="Allergie">
+        <item>Hausstaub</item>
+        <item>Tierharre</item>
+        <item>Pollen</item>
+    </string-array>
 
 </resources>
