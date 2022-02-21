@@ -43,8 +43,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
-        //btnLogout= (Button) findViewById(R.id.btnLogout);
-        //btnLogout.setOnClickListener(this);
+
 
         btnSave= (Button) findViewById(R.id.btnSave);
 
@@ -60,8 +59,9 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         ListView listView= (ListView)findViewById(R.id.allerList);
 
 
-
-
+        /**
+         * Representation of the Allergie Array in the App for the User
+         */
 
         ArrayAdapter<CharSequence> arrayAdapter= ArrayAdapter.createFromResource(this,R.array.Allergie,android.R.layout.simple_list_item_1);
         listView.setAdapter(arrayAdapter);
@@ -73,6 +73,10 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             }
         });
 
+        /**Saving personal info
+         * By using the SharedPreferences the entered data of the user of the String and Integer
+         * values are passed and stored, in order to convert with a repeated use.
+         */
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         int number = prefs.getInt("numbInt",0);
@@ -93,12 +97,20 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         String date= prefs.getString("dateStr","");
         edDate.setText(date);
 
+        /**With the spinner item the User has the possibilty to choose his blood type
+         * using the Blood Type Array and Arrayadapter to make it work in the app
+         */
+
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.Blutgruppe, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(this);
 
+        /**Enter personal Information
+         * Here the passed strings and integers of the originating EditTexts are converted
+         * from personal information to strings for multiple editing by the sharedPrefs editor.
+         */
 
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
