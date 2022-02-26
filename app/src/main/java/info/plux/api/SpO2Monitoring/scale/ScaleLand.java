@@ -14,7 +14,7 @@ import info.plux.api.SpO2Monitoring.R;
 
 public class ScaleLand extends View {
 
-    private Paint outerPaint, middlePaint, innerPaint;
+    private Paint outerPaint, middlePaint, innerPaint, limitLinePaint;
     private Paint degreePaint, graduationPaint;
 
     private static final int GRADUATION_TEXT_SIZE = 14; // in sp
@@ -23,6 +23,8 @@ public class ScaleLand extends View {
     private float minLevel = ScaleConstants.MIN_LEVEL;
     private float rangeOfLevels = ScaleConstants.RANGE_OF_LEVELS;
     private float currentLevel = ScaleConstants.MIN_LEVEL;
+    private float limit = 80;
+    private float limitPosition;
     private Rect rect = new Rect();
 
     private int height;
@@ -73,6 +75,18 @@ public class ScaleLand extends View {
     }
 
 
+    public void setLimit(float limit){
+        if (limit > maxLevel) {
+            this.limit = maxLevel;
+        } else if (limit < minLevel) {
+            this.limit = minLevel;
+        } else {
+            this.limit = limit;
+        }
+
+        invalidate();
+    }
+
     public void init(Context context, AttributeSet attrs) {
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.Scale);
         float scaleDimension = typedArray.getDimension(R.styleable.Scale_dimension, 20f);
@@ -93,6 +107,11 @@ public class ScaleLand extends View {
         outerPaint = new Paint();
         outerPaint.setColor(outerColor);
         outerPaint.setStyle(Paint.Style.FILL);
+
+        limitLinePaint = new Paint();
+        limitLinePaint.setColor(innerColor);
+        limitLinePaint.setStyle(Paint.Style.FILL);
+        limitLinePaint.setStrokeWidth(10);
 
         middlePaint = new Paint();
         middlePaint.setColor(middleColor);
@@ -204,5 +223,30 @@ public class ScaleLand extends View {
         canvas.drawRect(innerRect, innerPaint);
 
 
+        float textWidth = rect.width();
+        float textHeight = rect.height();
+        limitPosition = calculateLimitPosition();
+
+        //canvas.drawLine(centerY - 5 * outerRectHeight / 10, limitPosition + textWidth / 2 - 14, centerY + outerRectHeight / 2, limitPosition + textWidth / 2 - 14, limitLinePaint);
+        canvas.drawLine( limitPosition + textWidth / 2 - 14, centerY - 5 * outerRectHeight / 10, limitPosition + textWidth / 2 - 14, centerY + outerRectHeight / 2, limitLinePaint);
+
+        //canvas.drawLine( limitPosition + textWidth / 2 - 14, centerY + outerRectHeight / 2, limitPosition + textWidth / 2 - 14, centerY - 5 * outerRectHeight / 10, limitLinePaint);
+
     }
+
+
+    private float calculateLimitPosition()
+    {
+        float len = middleEndX - middleStartX;
+        //float len = middleEndX ;
+        float offset = outerEndX - middleEndX;
+        //float offset = middleStartX;
+        //float offset = middleEndX;
+
+        //return limitPosition;
+        return len / 100 * ( limit) + offset;
+
+    }
+
+
 }

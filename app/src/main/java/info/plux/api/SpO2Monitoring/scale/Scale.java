@@ -14,7 +14,7 @@ import info.plux.api.SpO2Monitoring.R;
 
 public class Scale extends View {
 
-    private Paint outerPaint, middlePaint, innerPaint;
+    private Paint outerPaint, middlePaint, innerPaint, limitLinePaint;
     private Paint degreePaint, graduationPaint;
 
     private static final int GRADUATION_TEXT_SIZE = 14; // in sp
@@ -23,6 +23,8 @@ public class Scale extends View {
     private float minLevel = ScaleConstants.MIN_LEVEL;
     private float rangeOfLevels = ScaleConstants.RANGE_OF_LEVELS;
     private float currentLevel = ScaleConstants.MIN_LEVEL;
+    private float limit = 65;
+    private float limitPosition;
     private Rect rect = new Rect();
 
     int height;
@@ -41,6 +43,7 @@ public class Scale extends View {
     float innerRectHeight;
 
     float lvl;
+    float save_level;
     float startGraduation;
     float inc;
 
@@ -72,6 +75,17 @@ public class Scale extends View {
         invalidate();
     }
 
+    public void setLimit(float limit){
+        if (limit > maxLevel) {
+            this.limit = maxLevel;
+        } else if (limit < minLevel) {
+            this.limit = minLevel;
+        } else {
+            this.limit = limit;
+        }
+
+        invalidate();
+    }
 
     public void init(Context context, AttributeSet attrs) {
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.Scale);
@@ -93,6 +107,11 @@ public class Scale extends View {
         outerPaint = new Paint();
         outerPaint.setColor(outerColor);
         outerPaint.setStyle(Paint.Style.FILL);
+
+        limitLinePaint = new Paint();
+        limitLinePaint.setColor(innerColor);
+        limitLinePaint.setStyle(Paint.Style.FILL);
+        limitLinePaint.setStrokeWidth(10);
 
         middlePaint = new Paint();
         middlePaint.setColor(middleColor);
@@ -167,7 +186,6 @@ public class Scale extends View {
             float textHeight = rect.height();
 
             canvas.drawText(((int) startGraduation) + "%", centerX - 7 * outerRectWidth / 10 - textWidth, lvl + textHeight / 2, graduationPaint);
-
             lvl += innerRectHeight / nbGraduations;
             startGraduation -= inc;
         }
@@ -204,6 +222,23 @@ public class Scale extends View {
 
         canvas.drawRect(innerRect, innerPaint);
 
+        float textWidth = rect.width();
+        float textHeight = rect.height();
+        limitPosition = calculateLimitPosition();
+
+        canvas.drawLine(centerX - 5 * outerRectWidth / 10, limitPosition + textHeight / 2 - 14, centerX + outerRectWidth / 2, limitPosition + textHeight / 2 - 14, limitLinePaint);
+
+
+    }
+
+
+    private float calculateLimitPosition()
+    {
+        float len = middleEndY - middleStartY;
+        float offset = middleStartY;
+
+        //return limitPosition;
+        return len / 100 * (100 - limit) + offset;
 
     }
 }
