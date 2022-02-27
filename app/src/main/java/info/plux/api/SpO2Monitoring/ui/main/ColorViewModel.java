@@ -516,7 +516,7 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
     // Enable/Disable Buttons
     //----------------------------------------------------------------------------------------------
 
-    // loading finished, connected, no cool down, no clearing
+    // Conditionals: loading finished, connected, no cool down, no clearing
     private Boolean[] clickableConditionals = new Boolean[]{false, false, true, true};
     private MutableLiveData<Boolean[]> clickable;
 
@@ -527,18 +527,20 @@ public class ColorViewModel extends ViewModel implements OnBiopluxDataAvailable 
         return clickable;
     }
 
-    public void changeClickable(int condition, boolean satisfied){
+    public void changeClickable(int condition, boolean satisfied) {
         boolean previousSatisfied;
 
+
         Boolean[] conditionals = clickable.getValue();
-        if( condition < 0 || condition >= conditionals.length){
-            Log.w(TAG, "Clickable could not be changed! Length: "+conditionals.length+"\n Condition: "+condition+" out of range.");
+        if (condition < 0 || condition >= conditionals.length) {
+            Log.w(TAG, "Clickable could not be changed! Length: " + conditionals.length + "\n Condition: " + condition + " out of range.");
         } else {
             previousSatisfied = conditionals[condition];
             conditionals[condition] = Boolean.valueOf(satisfied);
             clickable.setValue(conditionals);
-            Log.d(TAG,"Clickable condition "+condition+" : "+ previousSatisfied+" --> "+satisfied);
+            Log.d(TAG, "Clickable condition " + condition + " : " + previousSatisfied + " --> " + satisfied);
         }
+
     }
 
     //----------------------------------------------------------------------------------------------

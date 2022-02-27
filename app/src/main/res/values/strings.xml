@@ -21,7 +21,7 @@
     <!-- Default for size preference -->
     <string name="pref_limit_default" translatable="false">90</string>
     <string name="pref_instr_default" > "Take a deep breath. Time for a break!"</string>
-    <string name="limit">Limit</string>
+    <string name="limit">Limit in Percents</string>
     <string name="instruction">Personal Instruction</string>
 
 
@@ -50,19 +50,21 @@
     <!-- Toast -->
     <string name="warning">Breathe my dear! Time to take a break.</string>
 
-    <!-- Blutgruppen-->
-    <string-array name="Blutgruppe">
-        <item>Blutgruppe A</item>
-        <item>Blutgruppe B</item>
-        <item>Blutgruppe 0</item>
-        <item>Blutgruppe AB</item>
+    <!-- Profile -->
+
+    <!-- blood types -->
+    <string-array name="bloodTypes">
+        <item>blood type A</item>
+        <item>blood type B</item>
+        <item>blood type 0</item>
+        <item>blood type AB</item>
     </string-array>
 
-    <!--Allergie-->
-    <string-array name="Allergie">
-        <item>Hausstaub</item>
-        <item>Tierharre</item>
-        <item>Pollen</item>
+    <!-- allergies -->
+    <string-array name="allergies">
+        <item>house dust</item>
+        <item>animal hair</item>
+        <item>pollen</item>
     </string-array>
 
 </resources>

@@ -45,7 +45,9 @@
         <activity
             android:name=".activities.PreferencesActivity"
             android:label="@string/action_preferences"
-            android:parentActivityName=".activities.MainActivity">
+            android:parentActivityName=".activities.MainActivity"
+            android:windowSoftInputMode="stateVisible|adjustResize"
+            android:fitsSystemWindows="true">
 
         </activity>
         <activity

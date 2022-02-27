@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.preference.Preference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -17,6 +18,7 @@ import info.plux.api.SpO2Monitoring.ui.main.ColorFragment;
 
 
 public class PreferencesFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener, Preference.OnPreferenceChangeListener {
+
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.settings_pref);
@@ -26,10 +28,11 @@ public class PreferencesFragment extends PreferenceFragmentCompat implements Sha
         int count = prefScreen.getPreferenceCount();
 
         // Go through all of the preferences, and set up their preference summary.
+        Preference preference; String value;
         for (int i = 0; i < count; i++) {
-            Preference p = prefScreen.getPreference(i);
-                String value = sharedPreferences.getString(p.getKey(), "");
-                setPreferenceSummary(p, value);
+            preference = prefScreen.getPreference(i);
+            value = sharedPreferences.getString(preference.getKey(), "");
+            setPreferenceSummary(preference, value);
         }
 
         // Set up onChangeListener for preferences
@@ -42,7 +45,7 @@ public class PreferencesFragment extends PreferenceFragmentCompat implements Sha
 
     //Make sure limit is an int
     @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
+    public boolean onPreferenceChange(@NonNull Preference preference, Object newValue) {
         Toast error = Toast.makeText(getContext(), "Please select a number.", Toast.LENGTH_SHORT);
         Toast limitOutOfRange = Toast.makeText(getContext(), "Please select a number in range of 0 and 100.", Toast.LENGTH_SHORT);
 
@@ -60,47 +63,45 @@ public class PreferencesFragment extends PreferenceFragmentCompat implements Sha
                 error.show();
                 return false;
             }
-            if(Integer.parseInt(newLimit) > 0 && Integer.parseInt(newLimit )< 100){
-               return true;
-            }
-            else{
+            if (Integer.parseInt(newLimit) > 0 && Integer.parseInt(newLimit) < 100) {
+                return true;
+            } else {
                 limitOutOfRange.show();
                 return false;
-                 }
+            }
 
         }
         return true;
     }
+
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         // Figure out which preference was changed
         Preference preference = findPreference(key);
-        if (null!= preference) {
+        if (null != preference) {
             //Update summary for preference
-            if((key.equals(getString(R.string.pref_limit))) ){
-               SharedPreferences.Editor editor = sharedPreferences.edit();
+            if ((key.equals(getString(R.string.pref_limit)))) {
+                SharedPreferences.Editor editor = sharedPreferences.edit();
                 // Set summary for new limit
                 String limit = sharedPreferences.getString(preference.getKey(), getString(R.string.pref_limit_default));
                 setPreferenceSummary(preference, String.valueOf(limit));
                 // Save limit as preference
-                editor.putInt(String.valueOf(R.string.pref_limit),R.string.pref_limit_default);
+                editor.putInt(String.valueOf(R.string.pref_limit), R.string.pref_limit_default);
                 editor.commit();
-                Toast.makeText(getContext(),"Limit saved",Toast.LENGTH_SHORT).show();
-            }
-            else if((key.equals(getString(R.string.pref_instruction)) )){
+                Toast.makeText(getContext(), "Limit saved", Toast.LENGTH_SHORT).show();
+            } else if ((key.equals(getString(R.string.pref_instruction)))) {
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 // Set summary for new instruction
                 String instruction = sharedPreferences.getString(preference.getKey(), String.valueOf(R.string.pref_instr_default));
                 setPreferenceSummary(preference, instruction);
                 // Save instruction as preference
-                editor.putString(String.valueOf(R.string.pref_instruction),String.valueOf(R.string.pref_instr_default));
+                editor.putString(String.valueOf(R.string.pref_instruction), String.valueOf(R.string.pref_instr_default));
                 editor.commit();
-                Toast.makeText(getContext(),"Instruction saved",Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Instruction saved", Toast.LENGTH_SHORT).show();
 
             }
         }
     }
-
 
 
     private void setPreferenceSummary(Preference preference, String value) {

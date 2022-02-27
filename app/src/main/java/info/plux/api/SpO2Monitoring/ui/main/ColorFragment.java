@@ -14,7 +14,6 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.media.MediaPlayer;
-import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,7 +32,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 
 
@@ -44,10 +42,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import info.plux.api.SpO2Monitoring.R;
-import info.plux.api.SpO2Monitoring.activities.MainActivity;
 import info.plux.api.SpO2Monitoring.database.DataRow;
 import info.plux.api.SpO2Monitoring.database.MeasureDB;
-import info.plux.api.SpO2Monitoring.fragments.PreferencesFragment;
 import info.plux.api.SpO2Monitoring.scale.Scale;
 import info.plux.api.SpO2Monitoring.scale.ScaleLand;
 import info.plux.pluxapi.Constants;
@@ -120,7 +116,7 @@ public class ColorFragment extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
 
     // Limit for setColorAccordingToLevel
-    private int limit;
+    private float limit;
 
     // How to get instance of PlotFragment
 
@@ -316,9 +312,9 @@ public class ColorFragment extends Fragment {
         // UI Buttons
         //------------------------------------------------------------------------------------------
 
-        //==========================================================================================
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // 1. Start button
-        //==========================================================================================
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         btStart.setOnClickListener(new View.OnClickListener() {
 
@@ -343,9 +339,9 @@ public class ColorFragment extends Fragment {
             }
         });
 
-        //==========================================================================================
-        // 2. Pause button
-        //==========================================================================================
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // 2. Stop button
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         btPause.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -375,9 +371,9 @@ public class ColorFragment extends Fragment {
             }
         });
 
-        //==========================================================================================
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // 3. Clear button
-        //==========================================================================================
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         btClear.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -422,7 +418,7 @@ public class ColorFragment extends Fragment {
         Log.v(TAG,"ON RESUME");
 
         // statReceiver registers state changes in Bioplux communication channel.
-        getActivity().registerReceiver(stateReceiver, intentFilterForStateReceiver);
+        getActivity().registerReceiver(BluetoothReceiver, intentFilterForStateReceiver);
 
 
         if(checkAndSetOrientationInfo()){ PlotFragment.addSeriesToGraph(colorViewModel.getSeriesArr()); }
@@ -436,17 +432,27 @@ public class ColorFragment extends Fragment {
         } else {
             // Reset simple moving average if recording is discontinued
             colorViewModel.getWriteToDBHandler().heartRateSMA.reset(false);
-            Log.i(TAG,"Recording not running or stopped");
+            Log.i(TAG, "Recording not running or stopped");
         }
 
         // Update instruction String when changed(?)
         String instruction = PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.pref_instruction), getString(R.string.pref_instr_default));
-        warningToast = Toast.makeText(getContext(), instruction,Toast.LENGTH_LONG);
+        warningToast = Toast.makeText(getContext(), instruction, Toast.LENGTH_LONG);
         SharedPreferences userPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
 
         // Update limit
-       String sLimit = userPreferences.getString("limit", "80");
-        limit = Integer.parseInt(sLimit);
+        String pref_limit_key = getResources().getString(R.string.pref_limit);
+        String pref_limit_default = getResources().getString(R.string.pref_limit_default);
+
+        String limitStr = userPreferences.getString(pref_limit_key,pref_limit_default);
+        limit = Float.parseFloat(limitStr);
+
+        if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
+            scale.setLimit(limit);
+        } else {
+            scaleLand.setLimit(limit);
+        }
+
 
 
 
@@ -471,7 +477,7 @@ public class ColorFragment extends Fragment {
 
         btPause.performClick();
 
-        getActivity().unregisterReceiver(stateReceiver);
+        getActivity().unregisterReceiver(BluetoothReceiver);
 
     }
 
@@ -695,9 +701,9 @@ public class ColorFragment extends Fragment {
     // UI Updates
     //----------------------------------------------------------------------------------------------
 
-    //==============================================================================================
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // For Initialization
-    //==============================================================================================
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private void initialize() {
         colorViewModel.setInitialized(true);
@@ -709,7 +715,7 @@ public class ColorFragment extends Fragment {
 
     }
 
-    //----------------------------------------------------------------------------------------------
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     protected void initializeUI(DataRow dataRow) {
 
@@ -748,8 +754,7 @@ public class ColorFragment extends Fragment {
         // Log.d(TAG,"Observer counter: "+databaseObserver.counter);
     }
 
-    //==============================================================================================
-    //==============================================================================================
+    //----------------------------------------------------------------------------------------------
 
     /**
      * The start and stop methods of HeartbeatView are supposed to be used alternating.
@@ -823,7 +828,7 @@ public class ColorFragment extends Fragment {
     /**
      * Used for checking for state changes of communication channel to display it in UI
      */
-    private final BroadcastReceiver stateReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver BluetoothReceiver = new BroadcastReceiver() {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -971,9 +976,9 @@ public class ColorFragment extends Fragment {
 
     }
 
-    //==============================================================================================
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // For Device Rotation
-    //==============================================================================================
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private boolean checkAndSetOrientationInfo() {
         boolean rotating;
@@ -994,7 +999,7 @@ public class ColorFragment extends Fragment {
             return rotating;
     }
 
-    //----------------------------------------------------------------------------------------------
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private String getOrientationAsString(final int orientation) {
         if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -1004,14 +1009,14 @@ public class ColorFragment extends Fragment {
         } else return "Undefined";
     }
 
-    //----------------------------------------------------------------------------------------------
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     private void debugDescribeOrientations(final int currentOrientation) {
         Log.v("Orientation", "previousOrientation: " + getOrientationAsString(colorViewModel.getPreviousOrientation()));
         Log.v("Orientation", "currentOrientation: " + getOrientationAsString(currentOrientation));
     }
 
-    //----------------------------------------------------------------------------------------------
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     /**
      *  Locks device rotation to prevent crashes until UI manipulation by clearing process is finished.
