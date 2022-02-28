@@ -60,11 +60,12 @@ public class PlotFragment extends Fragment {
      *  The series are added to the graph. The graph holds the series.
      */
     public static void addSeriesToGraph(LineGraphSeries[] seriesArr){
+
+        // Makes val_1 series red
+        seriesArr[0].setColor(Color.RED);
+
         // Adds val_1 to scale
         graph.addSeries(seriesArr[0]);
-
-        // Makes val_2 series red
-        seriesArr[1].setColor(Color.RED);
 
         // Adds val_2 series to scale
         graph.addSeries(seriesArr[1]);
