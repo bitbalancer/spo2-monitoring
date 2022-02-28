@@ -293,11 +293,7 @@ public class ColorFragment extends Fragment {
                 heartRateView.setText(savedInstanceState.getString(VAL_3_KEY));
                 stateView.setText(savedInstanceState.getString(STATE_KEY));
 
-                if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                    scale.setCurrentLevel(val1);
-                } else {
-                    scaleLand.setCurrentLevel(val1);
-                }
+                setCurrentLevel(val1);
 
                 Log.v(TAG, "SavedInstanceState used!");
             }
@@ -887,6 +883,21 @@ public class ColorFragment extends Fragment {
     //----------------------------------------------------------------------------------------------
 
     /**
+     * Sets the current level of the scale in landscape or portrait mode
+     * @param val
+     */
+    private void setCurrentLevel(float val) {
+        if (currentOrientation == Configuration.ORIENTATION_PORTRAIT) {
+            scale.setCurrentLevel(val);
+        } else {
+            scaleLand.setCurrentLevel(val);
+        }
+    }
+
+
+    //----------------------------------------------------------------------------------------------
+
+    /**
      * The relative strength ranging from 0 to 100 % determines the saturation of the background color
      * There are 5 labels for intensity: Very Low, Low, Normal, High, Very High.
      * The label is depending on the input.
@@ -971,6 +982,7 @@ public class ColorFragment extends Fragment {
         colorLevelView.setText(R.string.start);
         setColorAccordingToLevelOf(VAL_1_DEFAULT);
         val_1 = VAL_1_DEFAULT;
+        setCurrentLevel(0f);
 
         lockDeviceRotation(false); // No rotation during UI manipulation
 
