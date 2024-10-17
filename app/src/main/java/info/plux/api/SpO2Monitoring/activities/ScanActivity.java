@@ -32,6 +32,7 @@ import android.widget.Toast;
 
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentTransaction;
 
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ public class ScanActivity extends AppCompatActivity {
         scan.setEnabled(false);
 
         // Sets up the scan button
-        scan.setOnClickListener(new View.OnClickListener(){
+        scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
@@ -111,11 +112,11 @@ public class ScanActivity extends AppCompatActivity {
                 // disabled during scan
                 scan.setEnabled(false);
                 // list items disabled too
-                if(scanListFragment != null) {
+                if (scanListFragment != null) {
                     scanListFragment.setItemsClickable(false);
-                    Log.v(TAG,"SetItmesClickable now false");
-                } else{
-                    Log.v(TAG,"ScanList Fragment does not exist");
+                    Log.v(TAG, "SetItmesClickable now false");
+                } else {
+                    Log.v(TAG, "ScanList Fragment does not exist");
                 }
 
                 // Scans for devices
@@ -141,6 +142,16 @@ public class ScanActivity extends AppCompatActivity {
         if (!mBluetoothAdapter.isEnabled()) {
 
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
 
         }

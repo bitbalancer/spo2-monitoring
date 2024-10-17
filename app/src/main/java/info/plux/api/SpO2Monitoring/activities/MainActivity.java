@@ -68,10 +68,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        super.onBackPressed();
         switch (tabs.getSelectedTabPosition()) {
             case 0:
                 // Starts main activity and passes on chosen device to it.
-                Intent intent = new Intent( getApplicationContext(), ScanActivity.class);
+                Intent intent = new Intent(getApplicationContext(), ScanActivity.class);
                 ColorViewModel colorViewModel = new ViewModelProvider(ColorFragment.getInstance()).get(ColorViewModel.class);
                 try {
                     colorViewModel.getBiopluxCommunication().disconnect();
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 colorViewModel.setInitialized(false);
                 startActivity(intent);
-                Log.v(TAG,"ON BACK PRESSED");
+                Log.v(TAG, "ON BACK PRESSED");
                 break;
             case 1:
                 tabs.getTabAt(0).select();

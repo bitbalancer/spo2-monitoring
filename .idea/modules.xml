@@ -4,8 +4,17 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/SpO2Monitoring.iml" filepath="$PROJECT_DIR$/.idea/modules/SpO2Monitoring.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.iml" filepath="$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.main.iml" filepath="$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/GraphView-master/SpO2Monitoring.GraphView-master.unitTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/SpO2Monitoring.app.unitTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.iml" filepath="$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.main.iml" filepath="$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/heartbeatview-library/SpO2Monitoring.heartbeatview-library.unitTest.iml" />
     </modules>
   </component>
 </project>
